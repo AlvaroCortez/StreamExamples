@@ -3,7 +3,6 @@ package org.examples.stream;
 
 import com.intellij.codeInsight.CodeInsightBundle;
 import com.intellij.codeInsight.documentation.DocFontSizePopup;
-//import com.intellij.codeInsight.documentation.DocumentationManager;
 import com.intellij.codeInsight.documentation.DocumentationManagerProtocol;
 import com.intellij.codeInsight.documentation.ToggleShowDocsOnHoverAction;
 import com.intellij.codeInsight.hint.HintManagerImpl;
@@ -46,7 +45,6 @@ import com.intellij.openapi.util.DimensionService;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.InvalidDataException;
 import com.intellij.openapi.util.registry.Registry;
-//import com.intellij.openapi.util.text.HtmlChunk;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.IdeFocusManager;
@@ -163,17 +161,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private AbstractPopup myHint;
 
   private final Map<KeyStroke, ActionListener> myKeyboardActions = new HashMap<>();
-
-//  @NotNull
-//  public static DocumentationComponent createAndFetch(@NotNull Project project,
-//                                                      @NotNull PsiElement element,
-//                                                      @NotNull Disposable disposable) {
-//    DocumentationManager manager = DocumentationManager.getInstance(project);
-//    DocumentationComponent component = new DocumentationComponent(manager);
-//    Disposer.register(disposable, component);
-//    manager.fetchDocInfo(element, component);
-//    return component;
-//  }
 
   public DocumentationComponent(DocumentationManager manager) {
     this(manager, true);
@@ -649,14 +636,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myHint = (AbstractPopup)hint;
   }
 
-//  public JBPopup getHint() {
-//    return myHint;
-//  }
-//
-//  public JComponent getComponent() {
-//    return myEditorPane;
-//  }
-
   @Nullable
   public PsiElement getElement() {
     return myElement != null ? myElement.getElement() : null;
@@ -678,12 +657,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   public void setText(@NotNull @Nls String text, @Nullable PsiElement element, @Nullable DocumentationProvider provider) {
     setData(element, text, null, null, provider);
   }
-
-//  public void replaceText(@NotNull @Nls String text, @Nullable PsiElement element) {
-//    PsiElement current = getElement();
-//    if (current == null || !current.getManager().areElementsEquivalent(current, element)) return;
-//    restoreContext(saveContext().withText(text));
-//  }
 
   public void clearHistory() {
     myForwardStack.clear();
@@ -933,102 +906,10 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     if (location != null) {
       text = text + getBottom(hasContent) + location + "</div>";
     }
-//    String links = getExternalText(myManager, getElement(), myExternalUrl, myProvider);
-//    if (links != null) {
-//      text = text + getBottom(location != null) + links;
-//    }
-    //workaround for Swing html renderer not removing empty paragraphs before non-inline tags
     text = text.replaceAll("<p>\\s*(<(?:[uo]l|h\\d|p))", "$1");
     text = addExternalLinksIcon(text);
     return text;
   }
-
-//  @Nullable
-//  private static @Nls String getExternalText(@NotNull DocumentationManager manager,
-//                                        @Nullable PsiElement element,
-//                                        @Nullable String externalUrl,
-//                                        @Nullable DocumentationProvider provider) {
-//    if (element == null || provider == null) return null;
-//
-//    PsiElement originalElement = DocumentationManager.getOriginalElement(element);
-//    if (!shouldShowExternalDocumentationLink(provider, element, originalElement)) {
-//      return null;
-//    }
-//
-//    String title = manager.getTitle(element);
-//    if (externalUrl == null) {
-//      List<String> urls = provider.getUrlFor(element, originalElement);
-//      if (urls != null) {
-//        boolean hasBadUrl = false;
-//        @Nls StringBuilder result = new StringBuilder();
-//        for (String url : urls) {
-//          String link = getLink(title, url);
-//          if (link == null) {
-//            hasBadUrl = true;
-//            break;
-//          }
-//
-//          if (result.length() > 0) result.append("<p>");
-//          result.append(link);
-//        }
-//        if (!hasBadUrl) return result.toString();
-//      }
-//      else {
-//        return null;
-//      }
-//    }
-//    else {
-//      String link = getLink(title, externalUrl);
-//      if (link != null) return link;
-//    }
-//
-////    String linkText = CodeInsightBundle.message("html.external.documentation.component.header", title, title == null ? 0 : 1);
-//    String linkText = "External documentation";
-//    return HtmlChunk.link("external_doc", linkText)
-//      .child(HtmlChunk.tag("icon").attr("src", "AllIcons.Ide.External_link_arrow")).toString();
-//    return null;
-//  }
-
-//  private static @Nls String getLink(@Nls String title, String url) {
-//    String hostname = getHostname(url);
-//    if (hostname == null) {
-//      return null;
-//    }
-//
-//    String linkText;
-//    if (title == null) {
-//      linkText = "Documentation on " + hostname;
-//    }
-//    else {
-//      linkText = title + " on " + hostname;
-//    }
-//    return HtmlChunk.link(url, linkText).toString();
-//  }
-
-//  static boolean shouldShowExternalDocumentationLink(DocumentationProvider provider,
-//                                                     PsiElement element,
-//                                                     PsiElement originalElement) {
-//    if (provider instanceof CompositeDocumentationProvider) {
-//      List<DocumentationProvider> providers = ((CompositeDocumentationProvider)provider).getProviders();
-//      for (DocumentationProvider p : providers) {
-//        if (p instanceof ExternalDocumentationHandler) {
-//          return ((ExternalDocumentationHandler)p).canHandleExternal(element, originalElement);
-//        }
-//      }
-//    }
-//    else if (provider instanceof ExternalDocumentationHandler) {
-//      return ((ExternalDocumentationHandler)provider).canHandleExternal(element, originalElement);
-//    }
-//    return true;
-//  }
-//
-//  private static String getHostname(String url) {
-//    try {
-//      return new URL(url).toURI().getHost();
-//    }
-//    catch (URISyntaxException | MalformedURLException ignored) { }
-//    return null;
-//  }
 
   private static int findContentStart(String text) {
     int index = StringUtil.indexOfIgnoreCase(text, "<body>", 0);
@@ -1427,10 +1308,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     return myText;
   }
 
-//  public String getDecoratedText() {
-//    return myDecoratedText;
-//  }
-
   @Override
   public void dispose() {
     myEditorPane.getCaret().setVisible(false); // Caret, if blinking, has to be deactivated.
@@ -1522,11 +1399,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       this.viewRect = viewRect;
       this.highlightedLink = highlightedLink;
     }
-
-//    @NotNull
-//    Context withText(@NotNull @Nls String text) {
-//      return new Context(element, text, externalUrl, provider, viewRect, highlightedLink);
-//    }
   }
 
   private class MyShowSettingsAction extends AnAction implements HintManagerImpl.ActionToIgnore {

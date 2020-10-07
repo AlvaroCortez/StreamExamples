@@ -6,17 +6,13 @@ import com.intellij.icons.AllIcons;
 import com.intellij.ide.DataManager;
 import com.intellij.ide.IdeEventQueue;
 import com.intellij.ide.util.PropertiesComponent;
-import com.intellij.lang.injection.InjectedLanguageManager;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.*;
-//import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.wm.*;
-import com.intellij.openapi.wm.ex.ToolWindowEx;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -32,15 +28,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.awt.*;
 import java.util.concurrent.CompletableFuture;
-//import java.util.concurrent.ExecutionException;
 
 public abstract class DockablePopupManager<T extends JComponent & Disposable> {
-//  private final static Logger LOG = Logger.getInstance(DockablePopupManager.class);
   protected ToolWindow myToolWindow;
   private Runnable myAutoUpdateRequest;
-//  private boolean myAutoUpdateMuted;
   @NotNull protected final Project myProject;
 
   public DockablePopupManager(@NotNull Project project) {
@@ -53,9 +45,7 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
   @NonNls
   protected abstract String getAutoUpdateEnabledProperty();
 
-  protected boolean getAutoUpdateDefault() {
-    return false;
-  }
+  protected abstract boolean getAutoUpdateDefault();
 
   @Nls
   protected abstract String getAutoUpdateTitle();
@@ -68,42 +58,14 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
 
   protected abstract T createComponent();
 
-//  protected void doUpdateComponent(@NotNull CompletableFuture<PsiElement> elementFuture, PsiElement originalElement, T component) {
-//    doUpdateComponent(elementFuture, originalElement, component, false);
-//  }
-
-//  protected void doUpdateComponent(@NotNull CompletableFuture<PsiElement> elementFuture,
-//                                   PsiElement originalElement,
-//                                   T component,
-//                                   boolean onAutoUpdate) {
-//    try {
-//      doUpdateComponent(elementFuture.get(), originalElement, component, onAutoUpdate);
-//    }
-//    catch (InterruptedException | ExecutionException e) {
-//      LOG.debug("Cannot update component", e);
-//    }
-//  }
-
   protected abstract void doUpdateComponent(@NotNull CompletableFuture<PsiElement> elementFuture,
                                    PsiElement originalElement,
                                    T component,
                                    boolean onAutoUpdate);
 
-//  protected abstract void doUpdateComponent(@NotNull PsiElement element, PsiElement originalElement, T component);
-
-//  protected void doUpdateComponent(@NotNull PsiElement element, PsiElement originalElement, T component, boolean onAutoUpdate) {
-//    doUpdateComponent(element, originalElement, component);
-//  }
-
   protected abstract void doUpdateComponent(@NotNull PsiElement element, PsiElement originalElement, T component, boolean onAutoUpdate);
 
-  protected void doUpdateComponent(Editor editor, PsiFile psiFile, boolean requestFocus) { doUpdateComponent(editor, psiFile); }
-
-  protected void doUpdateComponent(Editor editor, PsiFile psiFile, boolean requestFocus, boolean onAutoUpdate) {
-    doUpdateComponent(editor, psiFile, requestFocus);
-  }
-
-  protected abstract void doUpdateComponent(Editor editor, PsiFile psiFile);
+  protected abstract void doUpdateComponent(Editor editor, PsiFile psiFile, boolean requestFocus, boolean onAutoUpdate);
 
   protected abstract void doUpdateComponent(@NotNull PsiElement element);
 
@@ -115,28 +77,9 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
 
   protected abstract String getToolWindowId();
 
-//  public Content recreateToolWindow(PsiElement element, PsiElement originalElement) {
-//    if (myToolWindow == null) {
-//      createToolWindow(element, originalElement);
-//      return null;
-//    }
-//
-//    final Content content = myToolWindow.getContentManager().getSelectedContent();
-//    if (content == null || !myToolWindow.isVisible()) {
-//      restorePopupBehavior();
-//      createToolWindow(element, originalElement);
-//      return null;
-//    }
-//    return content;
-//  }
-
   public void createToolWindow(@NotNull PsiElement element, PsiElement originalElement) {
     doCreateToolWindow(element, null, originalElement);
   }
-
-//  public void createToolWindow(@NotNull CompletableFuture<PsiElement> elementFuture, PsiElement originalElement) {
-//    doCreateToolWindow(null, elementFuture, originalElement);
-//  }
 
   private void doCreateToolWindow(@Nullable PsiElement element,
                                   @Nullable CompletableFuture<PsiElement> elementFuture,
@@ -196,14 +139,9 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     }
   }
 
-  protected void installComponentActions(@NotNull ToolWindow toolWindow, T component) {
-    ((ToolWindowEx)toolWindow).setAdditionalGearActions(new DefaultActionGroup(createActions()));
-  }
+  protected abstract void installComponentActions(@NotNull ToolWindow toolWindow, T component);
 
-  protected void setToolWindowDefaultState(@NotNull ToolWindow toolWindow) {
-    Rectangle rectangle = WindowManager.getInstance().getIdeFrame(myProject).suggestChildFrameBounds();
-    toolWindow.setDefaultState(ToolWindowAnchor.RIGHT, ToolWindowType.FLOATING, rectangle);
-  }
+  protected abstract void setToolWindowDefaultState(@NotNull ToolWindow toolWindow);
 
   protected AnAction[] createActions() {
     ToggleAction toggleAutoUpdateAction = new ToggleAction(getAutoUpdateTitle(), getAutoUpdateDescription(),
@@ -234,7 +172,6 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
   }
 
   void restartAutoUpdate(final boolean state) {
-//    boolean enabled = state && myToolWindow != null && !myAutoUpdateMuted;
     boolean enabled = state && myToolWindow != null;
     if (enabled) {
       if (myAutoUpdateRequest == null) {
@@ -250,25 +187,6 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
       }
     }
   }
-
-//  public void muteAutoUpdateTill(@NotNull Disposable disposable) {
-//    ApplicationManager.getApplication().assertIsDispatchThread();
-//    myAutoUpdateMuted = true;
-//    resetAutoUpdateState();
-//    Disposer.register(disposable, () -> {
-//      ApplicationManager.getApplication().assertIsDispatchThread();
-//      myAutoUpdateMuted = false;
-//      resetAutoUpdateState();
-//    });
-//  }
-
-//  public void resetAutoUpdateState() {
-//    restartAutoUpdate(PropertiesComponent.getInstance().getBoolean(getAutoUpdateEnabledProperty(), getAutoUpdateDefault()));
-//  }
-//
-//  public void updateComponent() {
-//    updateComponent(false);
-//  }
 
   public void updateComponent(boolean requestFocus) {
     updateComponent(requestFocus, false);
@@ -318,21 +236,5 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     });
   }
 
-
-  public void restorePopupBehavior() {
-    ToolWindow toolWindow = myToolWindow;
-    if (toolWindow == null) {
-      return;
-    }
-
-    PropertiesComponent.getInstance().setValue(getShowInToolWindowProperty(), Boolean.FALSE.toString());
-    toolWindow.remove();
-    Disposer.dispose(toolWindow.getContentManager());
-    myToolWindow = null;
-    restartAutoUpdate(false);
-  }
-
-//  public boolean hasActiveDockedDocWindow() {
-//    return myToolWindow != null && myToolWindow.isVisible();
-//  }
+  public abstract void restorePopupBehavior();
 }
