@@ -1,0 +1,27 @@
+<idea-plugin>
+    <id>org.example.StreamExamples</id>
+    <name>Stream Code Examples</name>
+    <vendor email="maslakov_denis@mail.ru" url="no">Maslakov</vendor>
+
+    <description><![CDATA[
+    Stream code examples that shows when you click on stream method
+    ]]></description>
+
+    <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+        <action id="org.example.stream.ShowStreamExampleInfoAction"
+                class="org.examples.stream.ShowStreamExampleInfoAction"
+                text="Show Method Example" description="Show stream method example info action">
+            <add-to-group group-id="ViewMenu" anchor="after" relative-to-action="QuickActions"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="alt E"/>
+        </action>
+    </actions>
+</idea-plugin>
