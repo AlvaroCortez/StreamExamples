@@ -60,18 +60,13 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
 
   protected abstract void doUpdateComponent(@NotNull CompletableFuture<PsiElement> elementFuture,
                                    PsiElement originalElement,
-                                   T component,
-                                   boolean onAutoUpdate);
+                                   T component);
 
-  protected abstract void doUpdateComponent(@NotNull PsiElement element, PsiElement originalElement, T component, boolean onAutoUpdate);
+  protected abstract void doUpdateComponent(@NotNull PsiElement element, PsiElement originalElement, T component);
 
-  protected abstract void doUpdateComponent(Editor editor, PsiFile psiFile, boolean requestFocus, boolean onAutoUpdate);
+  protected abstract void doUpdateComponent(Editor editor, PsiFile psiFile, boolean requestFocus);
 
   protected abstract void doUpdateComponent(@NotNull PsiElement element);
-
-  protected void doUpdateComponent(@NotNull PsiElement element, boolean onAutoUpdate) {
-    doUpdateComponent(element);
-  }
 
   protected abstract @NlsContexts.TabTitle String getTitle(PsiElement element);
 
@@ -131,11 +126,11 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     PropertiesComponent.getInstance().setValue(getShowInToolWindowProperty(), Boolean.TRUE.toString());
     restartAutoUpdate(PropertiesComponent.getInstance().getBoolean(getAutoUpdateEnabledProperty(), true));
     if (element != null) {
-      doUpdateComponent(element, originalElement, component, false);
+      doUpdateComponent(element, originalElement, component);
     }
     else {
       //noinspection ConstantConditions
-      doUpdateComponent(elementFuture, originalElement, component, false);
+      doUpdateComponent(elementFuture, originalElement, component);
     }
   }
 
@@ -175,7 +170,7 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     boolean enabled = state && myToolWindow != null;
     if (enabled) {
       if (myAutoUpdateRequest == null) {
-        myAutoUpdateRequest = () -> updateComponent(false, true);
+        myAutoUpdateRequest = () -> updateComponent(false);
 
         UIUtil.invokeLaterIfNeeded(() -> IdeEventQueue.getInstance().addIdleListener(myAutoUpdateRequest, 500));
       }
@@ -188,11 +183,7 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     }
   }
 
-  public void updateComponent(boolean requestFocus) {
-    updateComponent(requestFocus, false);
-  }
-
-  protected void updateComponent(boolean requestFocus, boolean onAutoUpdate) {
+  protected void updateComponent(boolean requestFocus) {
     if (myProject.isDisposed()) {
       return;
     }
@@ -201,11 +192,11 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
       .getDataContextFromFocusAsync()
       .onSuccess(dataContext -> {
         if (!myProject.isOpen()) return;
-        updateComponentInner(dataContext, requestFocus, onAutoUpdate);
+        updateComponentInner(dataContext, requestFocus);
       });
   }
 
-  private void updateComponentInner(@NotNull DataContext dataContext, boolean requestFocus, boolean onAutoUpdate) {
+  private void updateComponentInner(@NotNull DataContext dataContext, boolean requestFocus) {
     if (CommonDataKeys.PROJECT.getData(dataContext) != myProject) {
       return;
     }
@@ -214,7 +205,7 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
     if (editor == null) {
       PsiElement element = CommonDataKeys.PSI_ELEMENT.getData(dataContext);
       if (element != null) {
-        doUpdateComponent(element, onAutoUpdate);
+        doUpdateComponent(element);
       }
       return;
     }
@@ -228,10 +219,10 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
       Editor injectedEditor = InjectedLanguageUtil.getEditorForInjectedLanguageNoCommit(editor, file);
       PsiFile injectedFile = PsiUtilBase.getPsiFileInEditor(injectedEditor, myProject);
       if (injectedFile != null) {
-        doUpdateComponent(injectedEditor, injectedFile, requestFocus, onAutoUpdate);
+        doUpdateComponent(injectedEditor, injectedFile, requestFocus);
       }
       else if (file != null) {
-        doUpdateComponent(editor, file, requestFocus, onAutoUpdate);
+        doUpdateComponent(editor, file, requestFocus);
       }
     });
   }

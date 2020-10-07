@@ -100,6 +100,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DocumentationComponent extends JPanel implements Disposable, DataProvider, WidthBasedLayout {
   private static final Logger LOG = Logger.getInstance(DocumentationComponent.class);
@@ -193,7 +194,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       @Override
       protected void processMouseEvent(MouseEvent e) {
         if (e.getID() == MouseEvent.MOUSE_PRESSED && myHint != null) {
-          //DocumentationComponent.this.requestFocus();
           initialClick = null;
           StyledDocument document = (StyledDocument)getDocument();
           int x = e.getX();
@@ -473,8 +473,8 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     if (myControlPanel != null) myControlPanel.setBackground(color);
   }
 
-  public AnAction[] getActions() {
-    return myToolBar.getActions().stream().filter((action -> !(action instanceof Separator))).toArray(AnAction[]::new);
+  public List<AnAction> getActions() {
+    return myToolBar.getActions().stream().filter((action -> !(action instanceof Separator))).collect(Collectors.toList());
   }
 
   public AnAction getFontSizeAction() {
