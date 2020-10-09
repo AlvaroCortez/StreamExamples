@@ -2,7 +2,6 @@
 package org.examples.stream;
 
 import com.intellij.codeInsight.CodeInsightBundle;
-import com.intellij.codeInsight.documentation.DocFontSizePopup;
 import com.intellij.codeInsight.documentation.DocumentationManagerProtocol;
 import com.intellij.codeInsight.documentation.ToggleShowDocsOnHoverAction;
 import com.intellij.codeInsight.hint.HintManagerImpl;
@@ -124,9 +123,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private SmartPsiElementPointer<PsiElement> myElement;
   private long myModificationCount;
 
-  private static final String QUICK_DOC_FONT_SIZE_V1_PROPERTY = "quick.doc.font.size"; // 2019.3 or earlier versions
-  private static final String QUICK_DOC_FONT_SIZE_V2_PROPERTY = "quick.doc.font.size.v2"; // 2020.1 EAP
-  private static final String QUICK_DOC_FONT_SIZE_V3_PROPERTY = "quick.doc.font.size.v3"; // 2020.1 or later versions
+  private static final String CODE_EXAMPLE_FONT_SIZE_PROPERTY = "quick.doc.font.size.v3rrr";
 
   private final Stack<Context> myBackStack = new Stack<>();
   private final Stack<Context> myForwardStack = new Stack<>();
@@ -574,38 +571,17 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   @NotNull
   public static FontSize getQuickDocFontSize() {
-    FontSize v1 = readFontSizeFromSettings(QUICK_DOC_FONT_SIZE_V1_PROPERTY, true);
-    FontSize v2 = readFontSizeFromSettings(QUICK_DOC_FONT_SIZE_V2_PROPERTY, true);
-    FontSize v3 = readFontSizeFromSettings(QUICK_DOC_FONT_SIZE_V3_PROPERTY, false);
+    FontSize v3 = readCodeExamplesFontSizeFromSettings();
     if (v3 != null) {
-      return v3;
-    }
-    if (v2 != null) {
-      v3 = migrateV2ToV3(v2);
-      setQuickDocFontSize(v3);
-      return v3;
-    }
-    if (v1 != null) {
-      v3 = migrateV2ToV3(migrateV1ToV2(v1));
-      setQuickDocFontSize(v3);
       return v3;
     }
     return FontSize.SMALL;
   }
 
-  private static @NotNull FontSize migrateV1ToV2(@NotNull FontSize size) {
-    return size == FontSize.X_LARGE ? FontSize.XX_LARGE : size == FontSize.LARGE ? FontSize.X_LARGE : size;
-  }
-
-  private static @NotNull FontSize migrateV2ToV3(@NotNull FontSize size) {
-    return size == FontSize.X_SMALL ? FontSize.XX_SMALL : size == FontSize.SMALL ? FontSize.X_SMALL : size;
-  }
-
   @Nullable
-  private static FontSize readFontSizeFromSettings(@NotNull String propertyName, boolean unsetAfterReading) {
-    String strValue = PropertiesComponent.getInstance().getValue(propertyName);
+  private static FontSize readCodeExamplesFontSizeFromSettings() {
+    String strValue = PropertiesComponent.getInstance().getValue(CODE_EXAMPLE_FONT_SIZE_PROPERTY);
     if (strValue != null) {
-      if (unsetAfterReading) PropertiesComponent.getInstance().unsetValue(propertyName);
       try {
         return FontSize.valueOf(strValue);
       }
@@ -615,7 +591,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   }
 
   public static void setQuickDocFontSize(@NotNull FontSize fontSize) {
-    PropertiesComponent.getInstance().setValue(QUICK_DOC_FONT_SIZE_V3_PROPERTY, fontSize.toString());
+    PropertiesComponent.getInstance().setValue(CODE_EXAMPLE_FONT_SIZE_PROPERTY, fontSize.toString());
   }
 
   public boolean isEmpty() {

@@ -388,16 +388,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                                    @NotNull PopupUpdateProcessor updateProcessor,
                                    PsiElement originalElement,
                                    @Nullable @Nls String documentation) {
-    doShowJavaDocInfo(element, requestFocus, updateProcessor, originalElement, null,
-                      documentation);
-  }
-
-  protected void doShowJavaDocInfo(@NotNull PsiElement element,
-                                   boolean requestFocus,
-                                   @NotNull PopupUpdateProcessor updateProcessor,
-                                   PsiElement originalElement,
-                                   @Nullable ActionCallback actionCallback,
-                                   @Nullable @Nls String documentation) {
     if (!myProject.isOpen()) return;
 
     ReadAction.run(() -> {
@@ -428,8 +418,8 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
           }
         }
         if (!sameElement || !component.isUpToDate()) {
-          cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false))
-            .doWhenDone(component::clearHistory);
+          //todo add actionCallback back or get rid of history (back and forward when press on other method in doc windows)
+          cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
         }
       }
 
@@ -467,11 +457,9 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                         documentation);
     }
     else {
-      ActionCallback actionCallback = new ActionCallback();
       elementFuture.thenAccept(element -> {
         if (element != null) {
-          AppUIUtil.invokeOnEdt(() -> doShowJavaDocInfo(element, requestFocus, updateProcessor, originalElement, actionCallback,
-                            documentation));
+          AppUIUtil.invokeOnEdt(() -> doShowJavaDocInfo(element, requestFocus, updateProcessor, originalElement, documentation));
         }
       });
     }
@@ -712,9 +700,9 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     return hint;
   }
 
-  private ActionCallback cancelAndFetchDocInfo(@NotNull DocumentationComponent component, @NotNull DocumentationCollector provider) {
+  private void cancelAndFetchDocInfo(@NotNull DocumentationComponent component, @NotNull DocumentationCollector provider) {
     myUpdateDocAlarm.cancelAllRequests();
-    return doFetchDocInfo(component, provider);
+    doFetchDocInfo(component, provider);
   }
 
   void updateToolWindowTabName(@NotNull PsiElement element) {
@@ -724,7 +712,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     }
   }
 
-  private ActionCallback doFetchDocInfo(@NotNull DocumentationComponent component,
+  private void doFetchDocInfo(@NotNull DocumentationComponent component,
                                         @NotNull DocumentationCollector collector) {
     if (myPrecalculatedDocumentation != null) {
       LOG.debug("Setting precalculated documentation:\n", myPrecalculatedDocumentation);
@@ -734,14 +722,14 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       if (element == null) {
         LOG.debug("Element for precalculated documentation is not available anymore");
         component.setText(NO_DOCUMENTATION_FOUND, null, collector.provider);
-        return null;
+        return;
       }
       PsiElement originalElement = getOriginalElement(collector, element);
       DocumentationProvider provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
       component.setData(element, myPrecalculatedDocumentation,
                         collector.effectiveUrl, collector.ref, provider);
       myPrecalculatedDocumentation = null;
-      return null;
+      return;
     }
 
     boolean wasEmpty = component.isEmpty();
@@ -809,7 +797,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         }
       }, modality);
     }, 10);
-    return null;
   }
 
   @NotNull
