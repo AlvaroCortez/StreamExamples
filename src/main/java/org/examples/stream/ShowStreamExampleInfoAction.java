@@ -33,7 +33,7 @@ public class ShowStreamExampleInfoAction extends AnAction {
 
         if (LookupManager.getInstance(project).getActiveLookup() == null) {
             if (event.getData(EditorGutter.KEY) != null) return;
-
+            if (editor == null) return;
             PsiFile file = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument());
             if (file == null && element == null) return;
         }
@@ -66,7 +66,7 @@ public class ShowStreamExampleInfoAction extends AnAction {
         }, getCommandName(), DocCommandGroupId.noneGroupId(editor.getDocument()), editor.getDocument());
     }
 
-    private  @NlsContexts.Command String getCommandName() {
+    private @NlsContexts.Command String getCommandName() {
         String text = getTemplatePresentation().getText();
         return text == null ? "" : text;
     }

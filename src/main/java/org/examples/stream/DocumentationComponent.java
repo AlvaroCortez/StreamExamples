@@ -42,7 +42,6 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.util.DimensionService;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.InvalidDataException;
 import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -125,8 +124,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   private static final String CODE_EXAMPLE_FONT_SIZE_PROPERTY = "quick.doc.font.size.v3rrr";
 
-  private final Stack<Context> myBackStack = new Stack<>();
-  private final Stack<Context> myForwardStack = new Stack<>();
   private final ActionToolbarImpl myToolBar;
   private volatile boolean myIsEmpty;
   private boolean mySizeTrackerRegistered;
@@ -151,7 +148,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private @Nls String myDecoratedText; // myEditorPane.getText() surprisingly crashes.., let's cache the text
   private final JComponent myControlPanel;
   private boolean myControlPanelVisible;
-  private int myHighlightedLink = -1;
   private Object myHighlightingTag;
   private final boolean myStoreSize;
   private boolean myManuallyResized;
@@ -207,7 +203,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       }
 
       private boolean hasTextAt(StyledDocument document, int x, int y) {
-        Element element = document.getCharacterElement(viewToModel(new Point(x, y)));
+        Element element = document.getCharacterElement(viewToModel2D(new Point(x, y)));
         try {
           String text = document.getText(element.getStartOffset(), element.getEndOffset() - element.getStartOffset());
           if (StringUtil.isEmpty(text.trim())) {
@@ -303,37 +299,13 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
     setLayout(new BorderLayout());
 
-    //add(myScrollPane, BorderLayout.CENTER);
     setOpaque(true);
     myScrollPane.setBorder(JBUI.Borders.empty());
 
     DefaultActionGroup actions = new DefaultActionGroup();
-    BackAction back = new BackAction();
-    ForwardAction forward = new ForwardAction();
     EditDocumentationSourceAction edit = new EditDocumentationSourceAction();
     myExternalDocAction = new ExternalDocAction();
-    actions.add(back);
-    actions.add(forward);
     actions.add(edit);
-
-    try {
-      String backKey = ScreenReader.isActive() ? "alt LEFT" : "LEFT";
-      CustomShortcutSet backShortcutSet = new CustomShortcutSet(KeyboardShortcut.fromString(backKey),
-                                                                KeymapUtil.parseMouseShortcut("button4"));
-
-      String forwardKey = ScreenReader.isActive() ? "alt RIGHT" : "RIGHT";
-      CustomShortcutSet forwardShortcutSet = new CustomShortcutSet(KeyboardShortcut.fromString(forwardKey),
-                                                                   KeymapUtil.parseMouseShortcut("button5"));
-      back.registerCustomShortcutSet(backShortcutSet, this);
-      forward.registerCustomShortcutSet(forwardShortcutSet, this);
-      // mouse actions are checked only for exact component over which click was performed,
-      // so we need to register shortcuts for myEditorPane as well
-      back.registerCustomShortcutSet(backShortcutSet, myEditorPane);
-      forward.registerCustomShortcutSet(forwardShortcutSet, myEditorPane);
-    }
-    catch (InvalidDataException e) {
-      LOG.error(e);
-    }
 
     myExternalDocAction.registerCustomShortcutSet(CustomShortcutSet.fromString("UP"), this);
     myExternalDocAction.registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_EXTERNAL_JAVADOC).getShortcutSet(), myEditorPane);
@@ -349,16 +321,15 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myEditorPane.addMouseListener(popupHandler);
     Disposer.register(this, () -> myEditorPane.removeMouseListener(popupHandler));
 
-    new NextLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("TAB"), this);
-    new PreviousLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("shift TAB"), this);
-    new ActivateLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("ENTER"), this);
-
     DefaultActionGroup toolbarActions = new DefaultActionGroup();
     toolbarActions.add(actions);
     toolbarActions.addAction(new ShowAsToolWindowAction()).setAsSecondary(true);
+    //todo remove
     toolbarActions.addAction(new ToggleShowDocsOnHoverAction()).setAsSecondary(true);
     toolbarActions.addAction(new MyShowSettingsAction(true)).setAsSecondary(true);
+    //todo remove
     toolbarActions.addAction(new ShowToolbarAction()).setAsSecondary(true);
+    //todo remove and show only when user changed the window
     toolbarActions.addAction(new RestoreDefaultSizeAction()).setAsSecondary(true);
     myToolBar = new ActionToolbarImpl(ActionPlaces.JAVADOC_TOOLBAR, toolbarActions, true) {
       Point initialClick;
@@ -634,24 +605,11 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     setData(element, text, null, null, provider);
   }
 
-  public void clearHistory() {
-    myForwardStack.clear();
-    myBackStack.clear();
-  }
-
-  private void pushHistory() {
-    if (myElement != null) {
-      myBackStack.push(saveContext());
-      myForwardStack.clear();
-    }
-  }
-
   public void setData(@Nullable PsiElement element,
                       @NotNull @Nls String text,
                       @Nullable String effectiveExternalUrl,
                       @Nullable String ref,
                       @Nullable DocumentationProvider provider) {
-    pushHistory();
     myExternalUrl = effectiveExternalUrl;
     myProvider = provider;
 
@@ -1046,39 +1004,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     }, null));
   }
 
-  private void goBack() {
-    if (myBackStack.isEmpty()) return;
-    Context context = myBackStack.pop();
-    myForwardStack.push(saveContext());
-    restoreContext(context);
-  }
-
-  private void goForward() {
-    if (myForwardStack.isEmpty()) return;
-    Context context = myForwardStack.pop();
-    myBackStack.push(saveContext());
-    restoreContext(context);
-  }
-
-  private Context saveContext() {
-    Rectangle rect = myScrollPane.getViewport().getViewRect();
-    return new Context(myElement, myText, myExternalUrl, myProvider, rect, myHighlightedLink);
-  }
-
-  private void restoreContext(@NotNull Context context) {
-    myExternalUrl = context.externalUrl;
-    myProvider = context.provider;
-    setDataInternal(context.element, context.text, context.viewRect, null);
-    highlightLink(context.highlightedLink);
-
-    if (myManager != null) {
-      PsiElement element  = context.element.getElement();
-      if (element != null) {
-        myManager.updateToolWindowTabName(element);
-      }
-    }
-  }
-
   private void updateControlState() {
     if (needsToolbar()) {
       myToolBar.updateActionsImmediately(); // update faster
@@ -1101,46 +1026,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     MyGearActionGroup(AnAction @NotNull ... actions) {
       super(actions);
       setPopup(true);
-    }
-  }
-
-  private class BackAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    BackAction() {
-      super(CodeInsightBundle.messagePointer("javadoc.action.back"), AllIcons.Actions.Back);
-    }
-
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      goBack();
-    }
-
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-      Presentation presentation = e.getPresentation();
-      presentation.setEnabled(!myBackStack.isEmpty());
-      if (!isToolbar(e)) {
-        presentation.setVisible(presentation.isEnabled());
-      }
-    }
-  }
-
-  private class ForwardAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    ForwardAction() {
-      super(CodeInsightBundle.messagePointer("javadoc.action.forward"), AllIcons.Actions.Forward);
-    }
-
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      goForward();
-    }
-
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-      Presentation presentation = e.getPresentation();
-      presentation.setEnabled(!myForwardStack.isEmpty());
-      if (!isToolbar(e)) {
-        presentation.setVisible(presentation.isEnabled());
-      }
     }
   }
 
@@ -1171,11 +1056,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       return null;
     }
   }
-
-  private static boolean isToolbar(@NotNull AnActionEvent e) {
-    return ActionPlaces.JAVADOC_TOOLBAR.equals(e.getPlace());
-  }
-
 
   private final class ExternalDocAction extends AnAction implements HintManagerImpl.ActionToIgnore {
     private ExternalDocAction() {
@@ -1287,21 +1167,10 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   @Override
   public void dispose() {
     myEditorPane.getCaret().setVisible(false); // Caret, if blinking, has to be deactivated.
-    myBackStack.clear();
-    myForwardStack.clear();
     myKeyboardActions.clear();
     myElement = null;
     myManager = null;
     myHint = null;
-  }
-
-  private int getLinkCount() {
-    HTMLDocument document = (HTMLDocument)myEditorPane.getDocument();
-    int linkCount = 0;
-    for (HTMLDocument.Iterator it = document.getIterator(HTML.Tag.A); it.isValid(); it.next()) {
-      if (it.getAttributes().isDefined(HTML.Attribute.HREF)) linkCount++;
-    }
-    return linkCount;
   }
 
   @Nullable
@@ -1317,7 +1186,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   }
 
   private void highlightLink(int n) {
-    myHighlightedLink = n;
     Highlighter highlighter = myEditorPane.getHighlighter();
     HTMLDocument.Iterator link = getLink(n);
     if (link != null) {
@@ -1343,37 +1211,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     else if (myHighlightingTag != null) {
       highlighter.removeHighlight(myHighlightingTag);
       myHighlightingTag = null;
-    }
-  }
-
-  private void activateLink(int n) {
-    HTMLDocument.Iterator link = getLink(n);
-    if (link != null) {
-      String href = (String)link.getAttributes().getAttribute(HTML.Attribute.HREF);
-      myManager.navigateByLink(this, null, href);
-    }
-  }
-
-  private static class Context {
-    final SmartPsiElementPointer<PsiElement> element;
-    final @Nls String text;
-    final String externalUrl;
-    final DocumentationProvider provider;
-    final Rectangle viewRect;
-    final int highlightedLink;
-
-    Context(SmartPsiElementPointer<PsiElement> element,
-            @Nls String text,
-            String externalUrl,
-            DocumentationProvider provider,
-            Rectangle viewRect,
-            int highlightedLink) {
-      this.element = element;
-      this.text = text;
-      this.externalUrl = externalUrl;
-      this.provider = provider;
-      this.viewRect = viewRect;
-      this.highlightedLink = highlightedLink;
     }
   }
 
@@ -1434,31 +1271,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     @Override
     public V remove(Object key) {
       throw new UnsupportedOperationException();
-    }
-  }
-
-  private class PreviousLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      int linkCount = getLinkCount();
-      if (linkCount <= 0) return;
-      highlightLink(myHighlightedLink < 0 ? (linkCount - 1) : (myHighlightedLink + linkCount - 1) % linkCount);
-    }
-  }
-
-  private class NextLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      int linkCount = getLinkCount();
-      if (linkCount <= 0) return;
-      highlightLink((myHighlightedLink + 1) % linkCount);
-    }
-  }
-
-  private class ActivateLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      activateLink(myHighlightedLink);
     }
   }
 

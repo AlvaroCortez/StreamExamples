@@ -13,14 +13,12 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.IdeEventQueue;
 import com.intellij.ide.actions.BaseNavigateToSourceAction;
 import com.intellij.ide.actions.WindowAction;
-import com.intellij.ide.highlighter.ArchiveFileType;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.ide.util.gotoByName.ChooseByNameBase;
 import com.intellij.ide.util.gotoByName.QuickSearchComponent;
 import com.intellij.lang.Language;
 import com.intellij.lang.LanguageDocumentation;
 import com.intellij.lang.documentation.CompositeDocumentationProvider;
-import com.intellij.lang.documentation.DocumentationMarkup;
 import com.intellij.lang.documentation.DocumentationProvider;
 import com.intellij.lang.documentation.DocumentationProviderEx;
 import com.intellij.lang.documentation.ExternalDocumentationHandler;
@@ -33,9 +31,6 @@ import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.fileTypes.FileType;
-import com.intellij.openapi.fileTypes.PlainTextFileType;
-import com.intellij.openapi.fileTypes.UnknownFileType;
 import com.intellij.openapi.project.IndexNotReadyException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.OrderEntry;
@@ -44,20 +39,12 @@ import com.intellij.openapi.roots.ui.configuration.ProjectSettingsService;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.*;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vcs.FileStatus;
-import com.intellij.openapi.vcs.FileStatusManager;
-import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.*;
 import com.intellij.openapi.wm.ex.ToolWindowEx;
 import com.intellij.openapi.wm.ex.WindowManagerEx;
 import com.intellij.psi.*;
 import com.intellij.psi.presentation.java.SymbolPresentationUtil;
-import com.intellij.psi.search.scope.packageSet.NamedScope;
-import com.intellij.psi.search.scope.packageSet.NamedScopesHolder;
-import com.intellij.psi.search.scope.packageSet.PackageSet;
-import com.intellij.psi.search.scope.packageSet.PackageSetBase;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.reference.SoftReference;
@@ -65,11 +52,9 @@ import com.intellij.ui.*;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.popup.AbstractPopup;
 import com.intellij.ui.popup.PopupUpdateProcessor;
-import com.intellij.ui.tabs.FileColorManagerImpl;
 import com.intellij.util.*;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.containers.ContainerUtil;
-import com.intellij.util.text.DateFormatUtil;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.*;
 import org.jetbrains.concurrency.CancellablePromise;
@@ -78,11 +63,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.io.File;
 import java.lang.ref.WeakReference;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -769,7 +750,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                            ? "Documentation is not available until indices are built."
                            : "Cannot fetch remote documentation: internal error";
           component.setText(message, null, collector.provider);
-          component.clearHistory();
+//          component.clearHistory();
         }, ModalityState.any());
         return;
       }
@@ -792,9 +773,9 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         else {
           component.setData(element, finalText, collector.effectiveUrl, collector.ref, collector.provider);
         }
-        if (wasEmpty) {
-          component.clearHistory();
-        }
+//        if (wasEmpty) {
+//          component.clearHistory();
+//        }
       }, modality);
     }, 10);
   }
@@ -1157,69 +1138,10 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         if (!element.isValid()) return null;
         SmartPsiElementPointer<?> originalPointer = element.getUserData(ORIGINAL_ELEMENT_KEY);
         PsiElement originalPsi = originalPointer != null ? originalPointer.getElement() : null;
-        String doc = onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
-        if (element instanceof PsiFile) {
-          String fileDoc = generateFileDoc((PsiFile)element, doc == null);
-          if (fileDoc != null) {
-            doc = doc == null ? fileDoc : doc + fileDoc;
-          }
-        }
-        return doc;
+        //todo here provider replace on own implementation
+        return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
       }).executeSynchronously();
     }
-  }
-
-  @Nullable
-  private static String generateFileDoc(@NotNull PsiFile psiFile, boolean withUrl) {
-    VirtualFile file = PsiUtilCore.getVirtualFile(psiFile);
-    File ioFile = file == null || !file.isInLocalFileSystem() ? null : VfsUtilCore.virtualToIoFile(file);
-    BasicFileAttributes attr = null;
-    try {
-      attr = ioFile == null ? null : Files.readAttributes(Paths.get(ioFile.toURI()), BasicFileAttributes.class);
-    }
-    catch (Exception ignored) { }
-    if (attr == null) return null;
-    FileType type = file.getFileType();
-    String typeName = type == UnknownFileType.INSTANCE ? "Unknown" :
-                      type == PlainTextFileType.INSTANCE ? "Text" :
-                      type == ArchiveFileType.INSTANCE ? "Archive" :
-                      type.getName();
-    String languageName = type.isBinary() ? "" : psiFile.getLanguage().getDisplayName();
-    return (withUrl ? DocumentationMarkup.DEFINITION_START +
-                      file.getPresentableUrl() +
-                      DocumentationMarkup.DEFINITION_END +
-                      DocumentationMarkup.CONTENT_START : "") +
-           getVcsStatus(psiFile.getProject(), file) +
-           getScope(psiFile.getProject(), file) +
-           "<p><span class='grayed'>Size:</span> " + StringUtil.formatFileSize(attr.size()) +
-           "<p><span class='grayed'>Type:</span> " + typeName + (type.isBinary() || typeName.equals(languageName) ? "" : " (" + languageName + ")") +
-           "<p><span class='grayed'>Modified:</span> " + DateFormatUtil.formatDateTime(attr.lastModifiedTime().toMillis()) +
-           "<p><span class='grayed'>Created:</span> " + DateFormatUtil.formatDateTime(attr.creationTime().toMillis()) + (withUrl ? DocumentationMarkup.CONTENT_END : "");
-  }
-
-  private static String getScope(Project project, VirtualFile file) {
-    FileColorManagerImpl colorManager = (FileColorManagerImpl)FileColorManager.getInstance(project);
-    Color color = colorManager.getRendererBackground(file);
-    if (color == null) return "";
-    for (NamedScopesHolder holder : NamedScopesHolder.getAllNamedScopeHolders(project)) {
-      for (NamedScope scope : holder.getScopes()) {
-        PackageSet packageSet = scope.getValue();
-        String name = scope.getName();
-        if (packageSet instanceof PackageSetBase && ((PackageSetBase)packageSet).contains(file, project, holder) &&
-            colorManager.getScopeColor(name) == color) {
-          return "<p><span class='grayed'>Scope:</span> <span bgcolor='" + ColorUtil.toHex(color) + "'>" + scope.getName() + "</span>";
-        }
-      }
-    }
-    return "";
-  }
-
-  @NotNull
-  private static String getVcsStatus(Project project, VirtualFile file) {
-    FileStatus status = FileStatusManager.getInstance(project).getStatus(file);
-    return status != FileStatus.NOT_CHANGED ?
-           "<p><span class='grayed'>VCS Status:</span> <span color='" + ColorUtil.toHex(status.getColor()) + "'>" + status.getText() + "</span>" :
-           "";
   }
 
   private Optional<QuickSearchComponent> findQuickSearchComponent() {
