@@ -11,7 +11,6 @@ import com.intellij.ide.actions.BaseNavigateToSourceAction;
 import com.intellij.ide.actions.WindowAction;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.lang.documentation.DocumentationMarkup;
-import com.intellij.lang.documentation.DocumentationProvider;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.actionSystem.ex.AnActionListener;
@@ -561,15 +560,13 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     return myElement != null ? PsiModificationTracker.SERVICE.getInstance(myElement.getProject()).getModificationCount() : -1;
   }
 
-  public void setText(@NotNull @Nls String text, @Nullable PsiElement element, @Nullable DocumentationProvider provider) {
-    setData(element, text, null, null, provider);
+  public void setText(@NotNull @Nls String text, @Nullable PsiElement element) {
+    setData(element, text, null);
   }
 
   public void setData(@Nullable PsiElement element,
                       @NotNull @Nls String text,
-                      @Nullable String effectiveExternalUrl,
-                      @Nullable String ref,
-                      @Nullable DocumentationProvider provider) {
+                      @Nullable String ref) {
     SmartPsiElementPointer<PsiElement> pointer = null;
     if (element != null && element.isValid()) {
       pointer = SmartPointerManager.getInstance(element.getProject()).createSmartPsiElementPointer(element);

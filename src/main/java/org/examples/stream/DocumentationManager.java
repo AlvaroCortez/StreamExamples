@@ -696,20 +696,17 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       PsiElement element = collector.getElement(false);
       if (element == null) {
         LOG.debug("Element for precalculated documentation is not available anymore");
-        component.setText(NO_DOCUMENTATION_FOUND, null, collector.provider);
+        component.setText(NO_DOCUMENTATION_FOUND, null);
         return;
       }
-      PsiElement originalElement = getOriginalElement(collector, element);
-      DocumentationProvider provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
-      component.setData(element, myPrecalculatedDocumentation,
-                        collector.effectiveUrl, collector.ref, provider);
+      component.setData(element, myPrecalculatedDocumentation, collector.ref);
       myPrecalculatedDocumentation = null;
       return;
     }
 
     boolean wasEmpty = component.isEmpty();
     if (wasEmpty) {
-      component.setText("Fetching Documentation...", null, collector.provider);
+      component.setText("Fetching Documentation...", null);
     }
 
     ModalityState modality = ModalityState.defaultModalityState();
@@ -721,7 +718,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       PsiElement element = collector.getElement(true);
       if (element == null || !ReadAction.compute(element::isValid)) {
         LOG.debug("Element for which documentation was requested is not available anymore");
-        GuiUtils.invokeLaterIfNeeded(() -> component.setText(NO_DOCUMENTATION_FOUND, null, collector.provider), ModalityState.any());
+        GuiUtils.invokeLaterIfNeeded(() -> component.setText(NO_DOCUMENTATION_FOUND, null), ModalityState.any());
         return;
       }
 
@@ -743,7 +740,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
           String message = finalFail instanceof IndexNotReadyException
                            ? "Documentation is not available until indices are built."
                            : "Cannot fetch remote documentation: internal error";
-          component.setText(message, null, collector.provider);
+          component.setText(message, null);
         }, ModalityState.any());
         return;
       }
@@ -758,13 +755,13 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         }
         String currentText = component.getText();
         if (finalText == null) {
-          component.setText(NO_DOCUMENTATION_FOUND, element, collector.provider);
+          component.setText(NO_DOCUMENTATION_FOUND, element);
         }
         else if (finalText.isEmpty()) {
-          component.setText(currentText, element, collector.provider);
+          component.setText(currentText, element);
         }
         else {
-          component.setData(element, finalText, collector.effectiveUrl, collector.ref, collector.provider);
+          component.setData(element, finalText, collector.ref);
         }
       }, modality);
     }, 10);
@@ -865,10 +862,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       }
     }
     return null;
-  }
-
-  private static PsiElement getOriginalElement(@NotNull DocumentationCollector collector, PsiElement targetElement) {
-    return collector instanceof MyCollector ? ((MyCollector)collector).originalElement : targetElement;
   }
 
   public void navigateByLink(@NotNull DocumentationComponent component, @Nullable PsiElement context, @NotNull String url) {
@@ -984,10 +977,13 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
   private abstract static class DocumentationCollector {
     private final CompletableFuture<PsiElement> myElementFuture;
+    //todo ref is used to scroll to ref, think do i need this?
     final String ref;
 
     //todo use in case when multiple method signature and try to delete in other places
+    //todo heck is used?
     volatile DocumentationProvider provider;
+    //todo check is used?
     String effectiveUrl;
 
     DocumentationCollector(PsiElement element,
