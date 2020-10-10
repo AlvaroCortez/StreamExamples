@@ -1007,7 +1007,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
   private static class MyCollector extends DocumentationCollector {
     final PsiElement originalElement;
-    //todo think do i need this, show doc when mouse point on method
+    //todo think do i need this, show doc when mouse point on method, probably delete cause pf show doc info standard window
     final boolean onHover;
 
     MyCollector(@NotNull PsiElement element,
@@ -1040,18 +1040,13 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         if (!element.isValid()) return null;
         SmartPsiElementPointer<?> originalPointer = element.getUserData(ORIGINAL_ELEMENT_KEY);
         PsiElement originalPsi = originalPointer != null ? originalPointer.getElement() : null;
-        //todo here provider replace on own implementation
-        //todo pre build files that contains all content to be viewed, without parser, only read string from file and show it - use here
-        //todo check here if psi elements is not specified i.e groupingBy then use provider to generate popup with specific method choice
-        //todo and when user clicks url then use own read from file
-        //todo grouping by is psi reference expression
         if (element instanceof PsiReference) {
           return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
         }
         final PsiClass psiClass = ((PsiMember) element).getContainingClass();
         if (nonNull(psiClass)) {
           final int parametersCount = ((PsiMethod) element).getParameterList().getParametersCount();
-          final String fullMethodName = getFullMethodName(psiClass, element);
+          final String fullMethodName = getFullMethodName(psiClass, element, parametersCount);
           final String filePath = CodeExamples.classToFileMap.get(fullMethodName);
           return FileUtil.loadTextAndClose(DocumentationManager.class.getResourceAsStream(filePath));
         }
@@ -1059,9 +1054,9 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       }).executeSynchronously();
     }
 
-    private String getFullMethodName(PsiClass psiClass, PsiElement psiElement) {
+    private String getFullMethodName(PsiClass psiClass, PsiElement psiElement, int parametersCount) {
       final String methodName = ((PsiMember) psiElement).getName();
-      return psiClass.getQualifiedName() + "." + methodName;
+      return psiClass.getQualifiedName() + "." + methodName + parametersCount;
     }
   }
 
