@@ -987,7 +987,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     private final CompletableFuture<PsiElement> myElementFuture;
     final String ref;
 
-    //todo maybe remove provider at all or not fort case when few urls
+    //todo use in case when multiple method signature and try to delete in other places
     volatile DocumentationProvider provider;
     String effectiveUrl;
 

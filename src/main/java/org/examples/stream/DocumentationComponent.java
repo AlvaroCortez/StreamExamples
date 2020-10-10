@@ -91,21 +91,23 @@ import java.util.stream.Collectors;
 
 public class DocumentationComponent extends JPanel implements Disposable, DataProvider, WidthBasedLayout {
   private static final Logger LOG = Logger.getInstance(DocumentationComponent.class);
+  //todo check what it is and where using
   private static final String DOCUMENTATION_TOPIC_ID = "reference.toolWindows.Documentation";
 
   public static final ColorKey COLOR_KEY = EditorColors.DOCUMENTATION_COLOR;
   public static final Color SECTION_COLOR = Gray.get(0x90);
 
-  //todo maybe remove link highlighter or not
   private static final Highlighter.HighlightPainter LINK_HIGHLIGHTER = new LinkHighlighter();
 
   private static final int PREFERRED_HEIGHT_MAX_EM = 10;
   private static final JBDimension MAX_DEFAULT = new JBDimension(650, 500);
   private static final JBDimension MIN_DEFAULT = new JBDimension(300, 36);
 
+  //todo maybe remove
   private static final Pattern EXTERNAL_LINK_PATTERN = Pattern.compile("(<a\\s*href=[\"']http[^>]*>)([^>]*)(</a>)");
   private static final @NonNls String EXTERNAL_LINK_REPLACEMENT = "$1$2<icon src='AllIcons.Ide.External_link_arrow'>$3";
 
+  //todo maybe remove
   private final ExternalDocAction myExternalDocAction;
 
   private DocumentationManager myManager;
@@ -118,6 +120,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private volatile boolean myIsEmpty;
   private boolean mySizeTrackerRegistered;
   private boolean myIgnoreFontSizeSliderChange;
+  //todo maybe remove
   private String myExternalUrl;
   private DocumentationProvider myProvider;
   private Reference<Component> myReferenceComponent;
@@ -304,8 +307,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     DefaultActionGroup toolbarActions = new DefaultActionGroup();
     toolbarActions.add(actions);
     toolbarActions.addAction(new ShowAsToolWindowAction()).setAsSecondary(true);
-    toolbarActions.addAction(new MyShowSettingsAction(true)).setAsSecondary(true);
-    //todo remove and show only when user changed the window
+    toolbarActions.addAction(new FontSizeSettingsAction(true)).setAsSecondary(true);
     toolbarActions.addAction(new RestoreDefaultSizeAction()).setAsSecondary(true);
     myToolBar = new ActionToolbarImpl(ActionPlaces.JAVADOC_TOOLBAR, toolbarActions, true) {
       Point initialClick;
@@ -364,7 +366,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     DefaultActionGroup gearActions = new MyGearActionGroup();
     ShowAsToolWindowAction showAsToolwindowAction = new ShowAsToolWindowAction();
     gearActions.add(showAsToolwindowAction);
-    gearActions.add(new MyShowSettingsAction(false));
+    gearActions.add(new FontSizeSettingsAction(false));
     gearActions.add(new RestoreDefaultSizeAction());
     gearActions.addSeparator();
     gearActions.addAll(actions);
@@ -420,7 +422,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   }
 
   public AnAction getFontSizeAction() {
-    return new MyShowSettingsAction(false);
+    return new FontSizeSettingsAction(false);
   }
 
   public void removeCornerMenu() {
@@ -1097,10 +1099,10 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     }
   }
 
-  private class MyShowSettingsAction extends AnAction implements HintManagerImpl.ActionToIgnore {
+  private class FontSizeSettingsAction extends AnAction implements HintManagerImpl.ActionToIgnore {
     private final boolean myOnToolbar;
 
-    MyShowSettingsAction(boolean onToolbar) {
+    FontSizeSettingsAction(boolean onToolbar) {
       super(CodeInsightBundle.message("javadoc.adjust.font.size"));
       myOnToolbar = onToolbar;
     }
