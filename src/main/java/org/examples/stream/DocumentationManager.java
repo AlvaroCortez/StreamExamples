@@ -399,7 +399,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
           }
         }
         if (!sameElement || !component.isUpToDate()) {
-          //todo add actionCallback back or get rid of history (back and forward when press on other method in doc windows)
           cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
         }
       }
@@ -750,7 +749,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                            ? "Documentation is not available until indices are built."
                            : "Cannot fetch remote documentation: internal error";
           component.setText(message, null, collector.provider);
-//          component.clearHistory();
         }, ModalityState.any());
         return;
       }
@@ -773,9 +771,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         else {
           component.setData(element, finalText, collector.effectiveUrl, collector.ref, collector.provider);
         }
-//        if (wasEmpty) {
-//          component.clearHistory();
-//        }
       }, modality);
     }, 10);
   }
@@ -1043,6 +1038,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     private final CompletableFuture<PsiElement> myElementFuture;
     final String ref;
 
+    //todo maybe remove provider at all
     volatile DocumentationProvider provider;
     String effectiveUrl;
 
@@ -1139,6 +1135,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         SmartPsiElementPointer<?> originalPointer = element.getUserData(ORIGINAL_ELEMENT_KEY);
         PsiElement originalPsi = originalPointer != null ? originalPointer.getElement() : null;
         //todo here provider replace on own implementation
+        //todo pre build files that contains all content to be viewed, without parser, only read string from file and show it - use here
         return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
       }).executeSynchronously();
     }
