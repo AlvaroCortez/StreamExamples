@@ -3,7 +3,6 @@ package org.examples.stream;
 
 import com.intellij.codeInsight.CodeInsightBundle;
 import com.intellij.codeInsight.documentation.DocumentationManagerProtocol;
-import com.intellij.codeInsight.documentation.ToggleShowDocsOnHoverAction;
 import com.intellij.codeInsight.hint.HintManagerImpl;
 import com.intellij.codeInsight.lookup.LookupEx;
 import com.intellij.codeInsight.lookup.LookupManager;
@@ -122,7 +121,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private SmartPsiElementPointer<PsiElement> myElement;
   private long myModificationCount;
 
-  private static final String CODE_EXAMPLE_FONT_SIZE_PROPERTY = "quick.doc.font.size.v3rrr";
+  private static final String CODE_EXAMPLE_FONT_SIZE_PROPERTY = "code.example.font.size";
 
   private final ActionToolbarImpl myToolBar;
   private volatile boolean myIsEmpty;
@@ -324,11 +323,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     DefaultActionGroup toolbarActions = new DefaultActionGroup();
     toolbarActions.add(actions);
     toolbarActions.addAction(new ShowAsToolWindowAction()).setAsSecondary(true);
-    //todo remove
-    toolbarActions.addAction(new ToggleShowDocsOnHoverAction()).setAsSecondary(true);
     toolbarActions.addAction(new MyShowSettingsAction(true)).setAsSecondary(true);
-    //todo remove
-    toolbarActions.addAction(new ShowToolbarAction()).setAsSecondary(true);
     //todo remove and show only when user changed the window
     toolbarActions.addAction(new RestoreDefaultSizeAction()).setAsSecondary(true);
     myToolBar = new ActionToolbarImpl(ActionPlaces.JAVADOC_TOOLBAR, toolbarActions, true) {
@@ -388,9 +383,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     DefaultActionGroup gearActions = new MyGearActionGroup();
     ShowAsToolWindowAction showAsToolwindowAction = new ShowAsToolWindowAction();
     gearActions.add(showAsToolwindowAction);
-    gearActions.add(new ToggleShowDocsOnHoverAction());
     gearActions.add(new MyShowSettingsAction(false));
-    gearActions.add(new ShowToolbarAction());
     gearActions.add(new RestoreDefaultSizeAction());
     gearActions.addSeparator();
     gearActions.addAll(actions);
@@ -1294,32 +1287,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       catch (Exception e) {
         LOG.warn("Error painting link highlight", e);
       }
-    }
-  }
-
-  private class ShowToolbarAction extends ToggleAction implements HintManagerImpl.ActionToIgnore {
-    ShowToolbarAction() {
-      super(CodeInsightBundle.messagePointer("javadoc.show.toolbar"));
-    }
-
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-      super.update(e);
-      if (myManager == null || myManager.myToolWindow != null) {
-        e.getPresentation().setEnabledAndVisible(false);
-      }
-    }
-
-    @Override
-    public boolean isSelected(@NotNull AnActionEvent e) {
-      return Registry.get("documentation.show.toolbar").asBoolean();
-    }
-
-    @Override
-    public void setSelected(@NotNull AnActionEvent e, boolean state) {
-      Registry.get("documentation.show.toolbar").setValue(state);
-      updateControlState();
-      showHint();
     }
   }
 
