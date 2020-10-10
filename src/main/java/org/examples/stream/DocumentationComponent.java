@@ -59,7 +59,6 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.popup.AbstractPopup;
 import com.intellij.ui.popup.PopupPositionManager;
 import com.intellij.ui.scale.JBUIScale;
-import com.intellij.ui.scale.ScaleContext;
 import com.intellij.util.*;
 import com.intellij.util.ui.*;
 import com.intellij.util.ui.accessibility.ScreenReader;
@@ -74,10 +73,8 @@ import javax.swing.text.*;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.ImageView;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -233,17 +230,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     HTMLEditorKit editorKit = new JBHtmlEditorKit(true, true) {
       @Override
       public ViewFactory getViewFactory() {
-        JBHtmlFactory factory = new JBHtmlFactory() {
-          @Override
-          public View create(Element elem) {
-            View view = super.create(elem);
-            if (view instanceof ImageView) {
-              // we have to work with raw image, apply scaling manually
-              return new MyScalingImageView(elem);
-            }
-            return view;
-          }
-        };
+        JBHtmlFactory factory = new JBHtmlFactory();
         factory.setAdditionalIconResolver(src -> {
           ModuleType<?> id = ModuleTypeManager.getInstance().findByID(src);
           return id == null ? null : id.getIcon();
@@ -1197,38 +1184,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
         myHint.setDimensionServiceKey(null);
       }
       showHint();
-    }
-  }
-
-  private final class MyScalingImageView extends ImageView {
-    private MyScalingImageView(Element elem) {super(elem);}
-
-    @Override
-    public float getMaximumSpan(int axis) {
-      return super.getMaximumSpan(axis) / JBUIScale.sysScale(myEditorPane);
-    }
-
-    @Override
-    public float getMinimumSpan(int axis) {
-      return super.getMinimumSpan(axis) / JBUIScale.sysScale(myEditorPane);
-    }
-
-    @Override
-    public float getPreferredSpan(int axis) {
-      return super.getPreferredSpan(axis) / JBUIScale.sysScale(myEditorPane);
-    }
-
-    @Override
-    public void paint(Graphics g, Shape a) {
-      Rectangle bounds = a.getBounds();
-      int width = (int)super.getPreferredSpan(View.X_AXIS);
-      int height = (int)super.getPreferredSpan(View.Y_AXIS);
-      if (width <= 0 || height <= 0) return;
-      @SuppressWarnings("UndesirableClassUsage")
-      BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-      Graphics2D graphics = image.createGraphics();
-      super.paint(graphics, new Rectangle(image.getWidth(), image.getHeight()));
-      StartupUiUtil.drawImage(g, ImageUtil.ensureHiDPI(image, ScaleContext.create(myEditorPane)), bounds.x, bounds.y, null);
     }
   }
 }
