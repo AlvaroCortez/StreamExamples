@@ -395,7 +395,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
           }
         }
         if (!sameElement || !component.isUpToDate()) {
-          cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
+          cancelAndFetchDocInfo(component, new MyCollector(element, originalElement, null, false));
         }
       }
 
@@ -405,7 +405,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     }
     else if (prevHint != null && prevHint.isVisible() && prevHint instanceof AbstractPopup) {
       DocumentationComponent component = (DocumentationComponent)((AbstractPopup)prevHint).getComponent();
-      cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
+      cancelAndFetchDocInfo(component, new MyCollector(element, originalElement, null, false));
     }
     else {
       showInPopup(element, requestFocus, updateProcessor, originalElement);
@@ -515,7 +515,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       Lookup lookup = LookupManager.getInstance(myProject).getActiveLookup();
       myEditor = lookup != null ? lookup.getEditor() : null;
     }
-    cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
+    cancelAndFetchDocInfo(component, new MyCollector(element, originalElement, null, false));
 
     myDocInfoHintRef = new WeakReference<>(hint);
 
@@ -902,8 +902,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     else if (url.startsWith(DocumentationManagerProtocol.PSI_ELEMENT_PROTOCOL)) {
       Pair<@NotNull PsiElement, @Nullable String> target = getTarget(psiElement, url);
       if (target != null) {
-        cancelAndFetchDocInfo(component,
-                              new MyCollector(myProject, target.first, null, target.second, false));
+        cancelAndFetchDocInfo(component, new MyCollector(target.first, null, target.second, false));
       }
     } else {
       cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, null) {
@@ -943,14 +942,14 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
   protected void doUpdateComponent(@NotNull CompletableFuture<PsiElement> elementFuture,
                                    PsiElement originalElement,
                                    DocumentationComponent component) {
-    cancelAndFetchDocInfo(component, new MyCollector(myProject, elementFuture, originalElement, null, false));
+    cancelAndFetchDocInfo(component, new MyCollector(elementFuture, originalElement, null, false));
   }
 
   @Override
   protected void doUpdateComponent(@NotNull PsiElement element,
                                    PsiElement originalElement,
                                    DocumentationComponent component) {
-    cancelAndFetchDocInfo(component, new MyCollector(myProject, element, originalElement, null, false));
+    cancelAndFetchDocInfo(component, new MyCollector(element, originalElement, null, false));
   }
 
   @Override
@@ -1004,26 +1003,22 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
   }
 
   private static class MyCollector extends DocumentationCollector {
-    final Project project;
     final PsiElement originalElement;
     //todo think do i need this, show doc when mouse point on method
     final boolean onHover;
 
-    MyCollector(@NotNull Project project,
-                @NotNull PsiElement element,
+    MyCollector(@NotNull PsiElement element,
                 PsiElement originalElement,
                 String ref,
                 boolean onHover) {
-      this(project, CompletableFuture.completedFuture(element), originalElement, ref, onHover);
+      this(CompletableFuture.completedFuture(element), originalElement, ref, onHover);
     }
 
-    MyCollector(@NotNull Project project,
-                @NotNull CompletableFuture<PsiElement> elementSupplier,
+    MyCollector(@NotNull CompletableFuture<PsiElement> elementSupplier,
                 PsiElement originalElement,
                 String ref,
                 boolean onHover) {
       super(elementSupplier, ref);
-      this.project = project;
       this.originalElement = originalElement;
       this.onHover = onHover;
     }
