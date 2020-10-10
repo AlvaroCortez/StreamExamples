@@ -1,0 +1,15 @@
+<html><head><base href="jar:file:///C:/Users/MacBookUser/.jdks/corretto-11.0.8/lib/src.zip!/java.base/java/util/stream/Stream.java"></head><body><div class='definition'><pre><a href="psi_element://java.util.stream.Stream"><code>java.util.stream.Stream&lt;T&gt;</code></a><br>public abstract&nbsp;&lt;R&gt;&nbsp;<a href="psi_element://java.util.stream.Stream"><code>Stream</code></a>&lt;R&gt;&nbsp;<b>flatMap</b>(<a href="psi_element://java.util.function.Function"><code>java.util.function.Function</code></a>&lt;? super T, ? extends <a href="psi_element://java.util.stream.Stream"><code>Stream</code></a>&lt;? extends R&gt;&gt;&nbsp;mapper)</pre></div><div class='content'>
+    THIS IS GROUPING BY EXAMPLE
+    <a href="psi_element://java.util.stream.BaseStream#close()"><code>closed</code></a> after its contents
+    have been placed into this stream.  (If a mapped stream is <code>null</code>
+    an empty stream is used, instead.)
+
+    <p>This is an <a href="psi_element://java.util.stream###StreamOps">intermediate
+        operation</a>.
+
+    <p></div><table class='sections'><p><tr><td valign='top' class='section'><p>Params:</td><td valign='top'>mapper &ndash; a <a href="psi_element://java.util.stream###NonInterference">non-interfering</a>,                <a href="psi_element://java.util.stream###Statelessness">stateless</a>                function to apply to each element which produces a stream                of new values  </td><tr><td valign='top' class='section'><p>Type parameters:</td><td valign='top'>&lt;R&gt; &ndash;  The element type of the new stream  </td><tr><td valign='top' class='section'><p>Returns:</td><td valign='top'><p>the new stream</td><tr><td valign='top' class='section'><p>API Note:</td><td valign='top'><p> The <code>flatMap()</code> operation has the effect of applying a one-to-many  transformation to the elements of the stream, and then flattening the  resulting elements into a new stream.  <p><b>Examples.</b>  <p>If <code>orders</code> is a stream of purchase orders, and each purchase  order contains a collection of line items, then the following produces a  stream containing all the line items in all the orders:  <pre><code>
+     orders.flatMap(order -&gt; order.getLineItems().stream())...
+ </code></pre>  <p>If <code>path</code> is the path to a file, then the following produces a  stream of the <code>words</code> contained in that file:  <pre><code>
+     Stream&lt;String&gt; lines = Files.lines(path, StandardCharsets.UTF_8);
+     Stream&lt;String&gt; words = lines.flatMap(line -&gt; Stream.of(line.split(&quot; +&quot;)));
+ </code></pre>  The <code>mapper</code> function passed to <code>flatMap</code> splits a line,  using a simple regular expression, into an array of words, and then  creates a stream of words from that array.  </td></table>

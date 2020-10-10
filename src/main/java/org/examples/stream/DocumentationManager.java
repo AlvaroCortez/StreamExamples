@@ -35,6 +35,7 @@ import com.intellij.openapi.roots.ui.configuration.ProjectSettingsService;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.*;
+import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.*;
 import com.intellij.openapi.wm.ex.ToolWindowEx;
@@ -66,6 +67,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static java.util.Objects.nonNull;
 
 public class DocumentationManager extends DockablePopupManager<DocumentationComponent> {
   public static final String NEW_JAVADOC_LOCATION_AND_SIZE = "javadoc.popup.new";
@@ -1042,8 +1045,23 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         //todo check here if psi elements is not specified i.e groupingBy then use provider to generate popup with specific method choice
         //todo and when user clicks url then use own read from file
         //todo grouping by is psi reference expression
-        return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
+        if (element instanceof PsiReference) {
+          return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
+        }
+        final PsiClass psiClass = ((PsiMember) element).getContainingClass();
+        if (nonNull(psiClass)) {
+          final int parametersCount = ((PsiMethod) element).getParameterList().getParametersCount();
+          final String fullMethodName = getFullMethodName(psiClass, element);
+          final String filePath = CodeExamples.classToFileMap.get(fullMethodName);
+          return FileUtil.loadTextAndClose(DocumentationManager.class.getResourceAsStream(filePath));
+        }
+        return "";
       }).executeSynchronously();
+    }
+
+    private String getFullMethodName(PsiClass psiClass, PsiElement psiElement) {
+      final String methodName = ((PsiMember) psiElement).getName();
+      return psiClass.getQualifiedName() + "." + methodName;
     }
   }
 
