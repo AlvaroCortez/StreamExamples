@@ -37,7 +37,6 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.util.DimensionService;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.IdeFocusManager;
@@ -837,9 +836,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     if (!(document instanceof StyledDocument)) {
       return;
     }
-    String fontName = Registry.is("documentation.component.editor.font") ?
-                      EditorColorsManager.getInstance().getGlobalScheme().getEditorFontName() :
-                      myEditorPane.getFont().getFontName();
+    String fontName = myEditorPane.getFont().getFontName();
 
     // changing font will change the doc's CSS as myEditorPane has JEditorPane.HONOR_DISPLAY_PROPERTIES via UIUtil.getHTMLEditorKit
     myEditorPane.setFont(UIUtil.getFontWithFallback(fontName, Font.PLAIN, JBUIScale.scale(getQuickDocFontSize().getSize())));
