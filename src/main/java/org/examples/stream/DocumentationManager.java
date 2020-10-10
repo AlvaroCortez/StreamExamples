@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.examples.stream;
 
 import com.intellij.codeInsight.TargetElementUtil;
@@ -1005,6 +1006,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
   private static class MyCollector extends DocumentationCollector {
     final Project project;
     final PsiElement originalElement;
+    //todo think do i need this, show doc when mouse point on method
     final boolean onHover;
 
     MyCollector(@NotNull Project project,
