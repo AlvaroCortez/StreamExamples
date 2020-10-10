@@ -121,7 +121,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private @Nls String myText; // myEditorPane.getText() surprisingly crashes.., let's cache the text
   private @Nls String myDecoratedText; // myEditorPane.getText() surprisingly crashes.., let's cache the text
   private final JComponent myControlPanel;
-  private boolean myControlPanelVisible;
   private Object myHighlightingTag;
   private final boolean myStoreSize;
   private boolean myManuallyResized;
@@ -329,8 +328,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
         if (myHint == null && myManager != null && myManager.myToolWindow == null) {
           int em = myEditorPane.getFont().getSize();
           int prefHeightMax = PREFERRED_HEIGHT_MAX_EM * em;
-          return new Dimension(size.width, Math.min(prefHeightMax,
-                                                    size.height + (needsToolbar() ? myControlPanel.getPreferredSize().height : 0)));
+          return new Dimension(size.width, Math.min(prefHeightMax, size.height));
         }
         return size;
       }
@@ -362,7 +360,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
     myControlPanel = myToolBar.getComponent();
     myControlPanel.setBorder(IdeBorderFactory.createBorder(UIUtil.getTooltipSeparatorColor(), SideBorder.BOTTOM));
-    myControlPanelVisible = false;
 
     HyperlinkListener hyperlinkListener = e -> {
       HyperlinkEvent.EventType type = e.getEventType();
@@ -517,12 +514,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   public void startWait() {
     myIsEmpty = true;
-  }
-
-  private void setControlPanelVisible() {
-    if (myControlPanelVisible) return;
-    add(myControlPanel, BorderLayout.NORTH);
-    myControlPanelVisible = true;
   }
 
   public void setHint(JBPopup hint) {
@@ -690,7 +681,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myEditorPane.setText(myDecoratedText);
     Dimension preferredSize = myEditorPane.getPreferredSize();
 
-    int height = preferredSize.height + (needsToolbar() ? myControlPanel.getPreferredSize().height : 0);
+    int height = preferredSize.height;
     JScrollBar scrollBar = myScrollPane.getHorizontalScrollBar();
     int reservedForScrollBar = width < preferredSize.width && scrollBar.isOpaque() ? scrollBar.getPreferredSize().height : 0;
     Insets insets = getInsets();
@@ -855,21 +846,9 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   }
 
   private void updateControlState() {
-    if (needsToolbar()) {
-      myToolBar.updateActionsImmediately(); // update faster
-      setControlPanelVisible();
-      removeCornerMenu();
-    }
-    else {
-      myControlPanelVisible = false;
       remove(myControlPanel);
       if (myManager.myToolWindow != null) return;
       myCorner.setVisible(true);
-    }
-  }
-
-  public boolean needsToolbar() {
-    return myManager.myToolWindow == null && Registry.is("documentation.show.toolbar");
   }
 
   private static class MyGearActionGroup extends DefaultActionGroup implements HintManagerImpl.ActionToIgnore {
@@ -879,6 +858,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     }
   }
 
+  //todo remove or make edit the code example source
   private final class EditDocumentationSourceAction extends BaseNavigateToSourceAction {
 
     private EditDocumentationSourceAction() {
