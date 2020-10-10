@@ -905,10 +905,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                               new MyCollector(myProject, target.first, null, target.second, false));
       }
     } else {
-      //todo delete when remove provider or not
-      DocumentationProvider provider = getProviderFromElement(psiElement);
-
-      cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, null, provider) {
+      cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, null) {
         @Override
         public String getDocumentation() {
           return "Couldn't resolve URL <i>" + url + "</i> <p>Configuring paths to API docs in <a href=\"open://Project Settings\">project settings</a> might help";
@@ -979,21 +976,15 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     private final CompletableFuture<PsiElement> myElementFuture;
     final String ref;
 
-    //todo use in case when multiple method signature and try to delete in other places
-    volatile DocumentationProvider provider;
-
     DocumentationCollector(PsiElement element,
-                           String ref,
-                           DocumentationProvider provider) {
-      this(CompletableFuture.completedFuture(element), ref, provider);
+                           String ref) {
+      this(CompletableFuture.completedFuture(element), ref);
     }
 
     DocumentationCollector(@NotNull CompletableFuture<PsiElement> elementFuture,
-                           String ref,
-                           DocumentationProvider provider) {
+                           String ref) {
       myElementFuture = elementFuture;
       this.ref = ref;
-      this.provider = provider;
     }
 
     @Nullable
@@ -1029,7 +1020,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                 PsiElement originalElement,
                 String ref,
                 boolean onHover) {
-      super(elementSupplier, ref, null);
+      super(elementSupplier, ref);
       this.project = project;
       this.originalElement = originalElement;
       this.onHover = onHover;
@@ -1042,7 +1033,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       if (element == null) {
         return null;
       }
-      provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
+      DocumentationProvider provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
       LOG.debug("Using provider ", provider);
 
       return ReadAction.nonBlocking(() -> {
