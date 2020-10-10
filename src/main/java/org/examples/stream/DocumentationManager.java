@@ -1,6 +1,5 @@
 package org.examples.stream;
 
-import com.intellij.codeInsight.CodeInsightBundle;
 import com.intellij.codeInsight.TargetElementUtil;
 import com.intellij.codeInsight.completion.CompletionUtil;
 import com.intellij.codeInsight.hint.HintManagerImpl;
@@ -9,7 +8,6 @@ import com.intellij.codeInsight.lookup.Lookup;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupEx;
 import com.intellij.codeInsight.lookup.LookupManager;
-import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.IdeEventQueue;
 import com.intellij.ide.actions.BaseNavigateToSourceAction;
 import com.intellij.ide.actions.WindowAction;
@@ -20,8 +18,6 @@ import com.intellij.lang.Language;
 import com.intellij.lang.LanguageDocumentation;
 import com.intellij.lang.documentation.CompositeDocumentationProvider;
 import com.intellij.lang.documentation.DocumentationProvider;
-import com.intellij.lang.documentation.ExternalDocumentationHandler;
-import com.intellij.lang.documentation.ExternalDocumentationProvider;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.actionSystem.ex.AnActionListener;
 import com.intellij.openapi.application.ApplicationManager;
@@ -123,17 +119,17 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
   @Override
   public String getRestorePopupDescription() {
-    return CodeInsightBundle.message("action.description.restore.popup.view.mode");
+    return "Restore popup view mode";
   }
 
   @Override
   public String getAutoUpdateDescription() {
-    return CodeInsightBundle.message("action.description.refresh.documentation.on.selection.change.automatically");
+    return "Refresh documentation on selection change auto...";
   }
 
   @Override
   public String getAutoUpdateTitle() {
-    return CodeInsightBundle.message("popup.title.auto.update.from.source");
+    return "Auto-update from Source";
   }
 
   @Override
@@ -713,7 +709,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
     boolean wasEmpty = component.isEmpty();
     if (wasEmpty) {
-      component.setText(CodeInsightBundle.message("javadoc.fetching.progress"), null, collector.provider);
+      component.setText("Fetching Documentation...", null, collector.provider);
     }
 
     ModalityState modality = ModalityState.defaultModalityState();
@@ -885,7 +881,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         return;
       }
     }
-    PsiManager manager = PsiManager.getInstance(getProject(psiElement));
     if (url.equals("external_doc")) {
       component.showExternalDoc();
       return;
@@ -917,48 +912,16 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         cancelAndFetchDocInfo(component,
                               new MyCollector(myProject, target.first, null, target.second, false));
       }
-    }
-    else {
+    } else {
       //todo delete when remove provider or not
       DocumentationProvider provider = getProviderFromElement(psiElement);
-      boolean processed = false;
-      if (provider instanceof CompositeDocumentationProvider) {
-        for (DocumentationProvider p : ((CompositeDocumentationProvider)provider).getAllProviders()) {
-          if (!(p instanceof ExternalDocumentationHandler)) continue;
 
-          ExternalDocumentationHandler externalHandler = (ExternalDocumentationHandler)p;
-          if (externalHandler.canFetchDocumentationLink(url)) {
-            String ref = externalHandler.extractRefFromLink(url);
-            PsiElement finalPsiElement = psiElement;
-            cancelAndFetchDocInfo(component, new DocumentationCollector(finalPsiElement, url, ref, p) {
-              @Override
-              public String getDocumentation() {
-                return externalHandler.fetchExternalDocumentation(url, finalPsiElement);
-              }
-            });
-            processed = true;
-          }
-          else if (externalHandler.handleExternalLink(manager, url, psiElement)) {
-            processed = true;
-            break;
-          }
+      cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, url, null, provider) {
+        @Override
+        public String getDocumentation() {
+          return "Couldn't resolve URL <i>" + url + "</i> <p>Configuring paths to API docs in <a href=\"open://Project Settings\">project settings</a> might help";
         }
-      }
-
-      if (!processed) {
-        cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, url, null, provider) {
-          @Override
-          public String getDocumentation() {
-            if (BrowserUtil.isAbsoluteURL(url)) {
-              BrowserUtil.browse(url);
-              return "";
-            }
-            else {
-              return CodeInsightBundle.message("javadoc.error.resolving.url", url);
-            }
-          }
-        });
-      }
+      });
     }
 
     component.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
@@ -1093,29 +1056,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       }
       provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
       LOG.debug("Using provider ", provider);
-
-      //todo remove provider or not
-      if (provider instanceof ExternalDocumentationProvider) {
-        List<String> urls = ReadAction.nonBlocking(
-          () -> {
-            SmartPsiElementPointer originalElementPtr = element.getUserData(ORIGINAL_ELEMENT_KEY);
-            PsiElement originalElement = originalElementPtr != null ? originalElementPtr.getElement() : null;
-            return provider.getUrlFor(element, originalElement);
-          }
-        ).executeSynchronously();
-        LOG.debug("External documentation URLs: ", urls);
-        if (urls != null) {
-          for (String url : urls) {
-            String doc = ((ExternalDocumentationProvider)provider).fetchExternalDocumentation(
-              project, element, Collections.singletonList(url), onHover);
-            if (doc != null) {
-              LOG.debug("Fetched documentation from ", url);
-              effectiveUrl = url;
-              return doc;
-            }
-          }
-        }
-      }
 
       return ReadAction.nonBlocking(() -> {
         if (!element.isValid()) return null;
