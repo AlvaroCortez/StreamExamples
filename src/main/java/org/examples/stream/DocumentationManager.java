@@ -20,7 +20,6 @@ import com.intellij.lang.Language;
 import com.intellij.lang.LanguageDocumentation;
 import com.intellij.lang.documentation.CompositeDocumentationProvider;
 import com.intellij.lang.documentation.DocumentationProvider;
-import com.intellij.lang.documentation.DocumentationProviderEx;
 import com.intellij.lang.documentation.ExternalDocumentationHandler;
 import com.intellij.lang.documentation.ExternalDocumentationProvider;
 import com.intellij.openapi.actionSystem.*;
@@ -920,6 +919,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       }
     }
     else {
+      //todo delete when remove provider or not
       DocumentationProvider provider = getProviderFromElement(psiElement);
       boolean processed = false;
       if (provider instanceof CompositeDocumentationProvider) {
@@ -1016,20 +1016,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     return title != null ? title : element.getText();
   }
 
-  @Nullable
-  Image getElementImage(@NotNull PsiElement element, @NotNull String imageSpec) {
-    DocumentationProvider provider = getProviderFromElement(element);
-    if (provider instanceof CompositeDocumentationProvider) {
-      for (DocumentationProvider p : ((CompositeDocumentationProvider)provider).getAllProviders()) {
-        if (p instanceof DocumentationProviderEx) {
-          Image image = ((DocumentationProviderEx)p).getLocalImageForElement(element, imageSpec);
-          if (image != null) return image;
-        }
-      }
-    }
-    return null;
-  }
-
   protected Editor getEditor() {
     return myEditor;
   }
@@ -1038,7 +1024,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     private final CompletableFuture<PsiElement> myElementFuture;
     final String ref;
 
-    //todo maybe remove provider at all
+    //todo maybe remove provider at all or not fort case when few urls
     volatile DocumentationProvider provider;
     String effectiveUrl;
 
@@ -1108,6 +1094,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       provider = ReadAction.compute(() -> getProviderFromElement(element, originalElement));
       LOG.debug("Using provider ", provider);
 
+      //todo remove provider or not
       if (provider instanceof ExternalDocumentationProvider) {
         List<String> urls = ReadAction.nonBlocking(
           () -> {
@@ -1136,6 +1123,9 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         PsiElement originalPsi = originalPointer != null ? originalPointer.getElement() : null;
         //todo here provider replace on own implementation
         //todo pre build files that contains all content to be viewed, without parser, only read string from file and show it - use here
+        //todo check here if psi elements is not specified i.e groupingBy then use provider to generate popup with specific method choice
+        //todo and when user clicks url then use own read from file
+        //todo grouping by is psi reference expression
         return onHover ? provider.generateHoverDoc(element, originalPsi) : provider.generateDoc(element, originalPsi);
       }).executeSynchronously();
     }

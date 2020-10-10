@@ -68,9 +68,7 @@ import com.intellij.util.*;
 import com.intellij.util.ui.*;
 import com.intellij.util.ui.accessibility.ScreenReader;
 import org.jetbrains.annotations.*;
-import org.jetbrains.ide.BuiltInServerManager;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.HyperlinkEvent;
@@ -84,17 +82,9 @@ import javax.swing.text.html.ImageView;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.awt.image.renderable.RenderContext;
-import java.awt.image.renderable.RenderableImage;
-import java.awt.image.renderable.RenderableImageProducer;
-import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
-import java.util.Vector;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -106,6 +96,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   public static final ColorKey COLOR_KEY = EditorColors.DOCUMENTATION_COLOR;
   public static final Color SECTION_COLOR = Gray.get(0x90);
 
+  //todo maybe remove link highlighter or not
   private static final Highlighter.HighlightPainter LINK_HIGHLIGHTER = new LinkHighlighter();
 
   private static final int PREFERRED_HEIGHT_MAX_EM = 10;
@@ -130,13 +121,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private String myExternalUrl;
   private DocumentationProvider myProvider;
   private Reference<Component> myReferenceComponent;
-
-  private final MyDictionary<String, Image> myImageProvider = new MyDictionary<>() {
-    @Override
-    public Image get(Object key) {
-      return getImageByKeyImpl(key);
-    }
-  };
 
   private Runnable myToolWindowCallback;
   private final ActionButton myCorner;
@@ -236,9 +220,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       public void setDocument(Document doc) {
         super.setDocument(doc);
         doc.putProperty("IgnoreCharsetDirective", Boolean.TRUE);
-        if (doc instanceof StyledDocument) {
-          doc.putProperty("imageCache", myImageProvider);
-        }
       }
     };
     DataProvider helpDataProvider = dataId -> PlatformDataKeys.HELP_ID.is(dataId) ? DOCUMENTATION_TOPIC_ID : null;
@@ -906,97 +887,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myEditorPane.setFont(UIUtil.getFontWithFallback(fontName, Font.PLAIN, JBUIScale.scale(getQuickDocFontSize().getSize())));
   }
 
-  @Nullable
-  private Image getImageByKeyImpl(Object key) {
-    if (myManager == null || key == null) return null;
-    PsiElement element = getElement();
-    if (element == null) return null;
-    URL url = (URL)key;
-    Image inMemory = myManager.getElementImage(element, url.toExternalForm());
-    if (inMemory != null) {
-      return inMemory;
-    }
-
-    Url parsedUrl = Urls.parseEncoded(url.toExternalForm());
-    BuiltInServerManager builtInServerManager = BuiltInServerManager.getInstance();
-    if (parsedUrl != null && builtInServerManager.isOnBuiltInWebServer(parsedUrl)) {
-      try {
-        url = new URL(builtInServerManager.addAuthToken(parsedUrl).toExternalForm());
-      }
-      catch (MalformedURLException e) {
-        LOG.warn(e);
-      }
-    }
-    URL imageUrl = url;
-    return Toolkit.getDefaultToolkit().createImage(new RenderableImageProducer(new RenderableImage() {
-      private Image myImage;
-      private boolean myImageLoaded;
-      @Override
-      public Vector<RenderableImage> getSources() { return null; }
-
-      @Override
-      public Object getProperty(String name) { return null; }
-
-      @Override
-      public String[] getPropertyNames() { return ArrayUtilRt.EMPTY_STRING_ARRAY; }
-
-      @Override
-      public boolean isDynamic() { return false; }
-
-      @Override
-      public float getWidth() { return getImage().getWidth(null); }
-
-      @Override
-      public float getHeight() { return getImage().getHeight(null); }
-
-      @Override
-      public float getMinX() { return 0; }
-
-      @Override
-      public float getMinY() { return 0; }
-
-      @Override
-      public RenderedImage createScaledRendering(int w, int h, RenderingHints hints) { return createDefaultRendering(); }
-
-      @Override
-      public RenderedImage createDefaultRendering() { return (RenderedImage)getImage(); }
-
-      @Override
-      public RenderedImage createRendering(RenderContext renderContext) { return createDefaultRendering(); }
-
-      private Image getImage() {
-        if (!myImageLoaded) {
-          Image image = loadImageFromUrl();
-          myImage = ImageUtil.toBufferedImage(image != null ?
-                                              image :
-                                              ((ImageIcon)UIManager.getLookAndFeelDefaults().get("html.missingImage")).getImage());
-          myImageLoaded = true;
-        }
-        return myImage;
-      }
-
-      @Nullable
-      private Image loadImageFromUrl() {
-        Image image = ImageLoader.loadFromUrl(imageUrl);
-        if (image != null &&
-            image.getWidth(null) > 0 &&
-            image.getHeight(null) > 0) {
-          return image;
-        }
-        try {
-          BufferedImage direct = ImageIO.read(imageUrl);
-          if (direct != null) return ImageUtil.ensureHiDPI(direct, ScaleContext.create(myEditorPane));
-        }
-        catch (IOException e) {
-          //ignore
-        }
-
-        return image;
-      }
-
-    }, null));
-  }
-
   private void updateControlState() {
     if (needsToolbar()) {
       myToolBar.updateActionsImmediately(); // update faster
@@ -1232,38 +1122,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
         // resize popup according to new font size, if user didn't set popup size manually
         if (!myManuallyResized && myHint != null && myHint.getDimensionServiceKey() == null) showHint();
       }, DocumentationComponent.this);
-    }
-  }
-
-  private abstract static class MyDictionary<K, V> extends Dictionary<K, V> {
-    @Override
-    public int size() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isEmpty() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Enumeration<K> keys() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Enumeration<V> elements() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public V put(K key, V value) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public V remove(Object key) {
-      throw new UnsupportedOperationException();
     }
   }
 
