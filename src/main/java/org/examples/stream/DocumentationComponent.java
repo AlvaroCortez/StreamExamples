@@ -1,7 +1,6 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.examples.stream;
 
-import com.intellij.codeInsight.CodeInsightBundle;
 import com.intellij.codeInsight.documentation.DocumentationManagerProtocol;
 import com.intellij.codeInsight.hint.HintManagerImpl;
 import com.intellij.codeInsight.lookup.LookupEx;
@@ -9,10 +8,8 @@ import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.DataManager;
 import com.intellij.ide.actions.BaseNavigateToSourceAction;
-import com.intellij.ide.actions.ExternalJavaDocAction;
 import com.intellij.ide.actions.WindowAction;
 import com.intellij.ide.util.PropertiesComponent;
-import com.intellij.lang.documentation.CompositeDocumentationProvider;
 import com.intellij.lang.documentation.DocumentationMarkup;
 import com.intellij.lang.documentation.DocumentationProvider;
 import com.intellij.openapi.Disposable;
@@ -107,9 +104,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private static final Pattern EXTERNAL_LINK_PATTERN = Pattern.compile("(<a\\s*href=[\"']http[^>]*>)([^>]*)(</a>)");
   private static final @NonNls String EXTERNAL_LINK_REPLACEMENT = "$1$2<icon src='AllIcons.Ide.External_link_arrow'>$3";
 
-  //todo maybe remove
-  private final ExternalDocAction myExternalDocAction;
-
   private DocumentationManager myManager;
   private SmartPsiElementPointer<PsiElement> myElement;
   private long myModificationCount;
@@ -120,9 +114,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private volatile boolean myIsEmpty;
   private boolean mySizeTrackerRegistered;
   private boolean myIgnoreFontSizeSliderChange;
-  //todo maybe remove
-  private String myExternalUrl;
-  private DocumentationProvider myProvider;
+
   private Reference<Component> myReferenceComponent;
 
   private Runnable myToolWindowCallback;
@@ -287,11 +279,8 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
     DefaultActionGroup actions = new DefaultActionGroup();
     EditDocumentationSourceAction edit = new EditDocumentationSourceAction();
-    myExternalDocAction = new ExternalDocAction();
     actions.add(edit);
 
-    myExternalDocAction.registerCustomShortcutSet(CustomShortcutSet.fromString("UP"), this);
-    myExternalDocAction.registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_EXTERNAL_JAVADOC).getShortcutSet(), myEditorPane);
     edit.registerCustomShortcutSet(CommonShortcuts.getEditSource(), this);
     ActionPopupMenu contextMenu = ((ActionManagerImpl)ActionManager.getInstance()).createActionPopupMenu(
       ActionPlaces.JAVADOC_TOOLBAR, actions, new MenuItemPresentationFactory(true));
@@ -431,11 +420,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   public void setToolWindowCallback(Runnable callback) {
     myToolWindowCallback = callback;
-  }
-
-  public void showExternalDoc() {
-    DataContext dataContext = DataManager.getInstance().getDataContext(this);
-    myExternalDocAction.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, dataContext));
   }
 
   @Override
@@ -586,9 +570,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
                       @Nullable String effectiveExternalUrl,
                       @Nullable String ref,
                       @Nullable DocumentationProvider provider) {
-    myExternalUrl = effectiveExternalUrl;
-    myProvider = provider;
-
     SmartPsiElementPointer<PsiElement> pointer = null;
     if (element != null && element.isValid()) {
       pointer = SmartPointerManager.getInstance(element.getProject()).createSmartPsiElementPointer(element);
@@ -919,7 +900,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     private EditDocumentationSourceAction() {
       super(true);
       getTemplatePresentation().setIcon(AllIcons.Actions.EditSource);
-      getTemplatePresentation().setText(CodeInsightBundle.messagePointer("action.presentation.DocumentationComponent.text"));
+      getTemplatePresentation().setText("Edit Source");
     }
 
     @Override
@@ -940,41 +921,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
       }
       return null;
     }
-  }
-
-  private final class ExternalDocAction extends AnAction implements HintManagerImpl.ActionToIgnore {
-    private ExternalDocAction() {
-      super(CodeInsightBundle.message("javadoc.action.view.external"), null, AllIcons.Actions.PreviousOccurence);
-      registerCustomShortcutSet(ActionManager.getInstance().getAction(IdeActions.ACTION_EXTERNAL_JAVADOC).getShortcutSet(), null);
-    }
-
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      if (myElement == null) {
-        return;
-      }
-
-      PsiElement element = myElement.getElement();
-      PsiElement originalElement = com.intellij.codeInsight.documentation.DocumentationManager.getOriginalElement(element);
-
-      ExternalJavaDocAction.showExternalJavadoc(element, originalElement, myExternalUrl, e.getDataContext());
-    }
-
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-      Presentation presentation = e.getPresentation();
-      presentation.setEnabled(hasExternalDoc());
-    }
-  }
-
-  private boolean hasExternalDoc() {
-    boolean enabled = false;
-    if (myElement != null && myProvider != null) {
-      PsiElement element = myElement.getElement();
-      PsiElement originalElement = com.intellij.codeInsight.documentation.DocumentationManager.getOriginalElement(element);
-      enabled = element != null && CompositeDocumentationProvider.hasUrlsFor(myProvider, element, originalElement);
-    }
-    return enabled;
   }
 
   private void registerActions() {
@@ -1103,7 +1049,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     private final boolean myOnToolbar;
 
     FontSizeSettingsAction(boolean onToolbar) {
-      super(CodeInsightBundle.message("javadoc.adjust.font.size"));
+      super("Adjust Font Size...");
       myOnToolbar = onToolbar;
     }
 
@@ -1215,7 +1161,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   private class ShowAsToolWindowAction extends AnAction implements HintManagerImpl.ActionToIgnore {
     ShowAsToolWindowAction() {
-      super(CodeInsightBundle.messagePointer("javadoc.open.as.tool.window"));
+      super(() -> "Open as Tool Window");
     }
 
     @Override
@@ -1238,7 +1184,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
   private class RestoreDefaultSizeAction extends AnAction implements HintManagerImpl.ActionToIgnore {
     RestoreDefaultSizeAction() {
-      super(CodeInsightBundle.messagePointer("javadoc.restore.size"));
+      super("Restore Size");
     }
 
     @Override

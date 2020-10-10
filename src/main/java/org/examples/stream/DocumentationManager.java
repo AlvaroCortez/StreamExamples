@@ -882,7 +882,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       }
     }
     if (url.equals("external_doc")) {
-      component.showExternalDoc();
       return;
     }
     if (url.startsWith("open")) {
