@@ -95,7 +95,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private static final JBDimension MAX_DEFAULT = new JBDimension(650, 500);
   private static final JBDimension MIN_DEFAULT = new JBDimension(300, 36);
 
-  //todo maybe remove
   private static final Pattern EXTERNAL_LINK_PATTERN = Pattern.compile("(<a\\s*href=[\"']http[^>]*>)([^>]*)(</a>)");
   private static final @NonNls String EXTERNAL_LINK_REPLACEMENT = "$1$2<icon src='AllIcons.Ide.External_link_arrow'>$3";
 
@@ -120,6 +119,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   private @Nls String myText; // myEditorPane.getText() surprisingly crashes.., let's cache the text
   private @Nls String myDecoratedText; // myEditorPane.getText() surprisingly crashes.., let's cache the text
   private final JComponent myControlPanel;
+  private int myHighlightedLink = -1;
   private Object myHighlightingTag;
   private final boolean myStoreSize;
   private boolean myManuallyResized;
@@ -276,6 +276,10 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     };
     myEditorPane.addMouseListener(popupHandler);
     Disposer.register(this, () -> myEditorPane.removeMouseListener(popupHandler));
+
+    new NextLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("TAB"), this);
+    new PreviousLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("shift TAB"), this);
+    new ActivateLinkAction().registerCustomShortcutSet(CustomShortcutSet.fromString("ENTER"), this);
 
     DefaultActionGroup toolbarActions = new DefaultActionGroup();
     toolbarActions.add(actions);
@@ -582,7 +586,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
 
     updateControlState();
 
-    highlightLink(-1);
+    highlightLink(myHighlightedLink);
 
     myEditorPane.setText(myDecoratedText);
     applyFontProps();
@@ -965,6 +969,15 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myHint = null;
   }
 
+  private int getLinkCount() {
+    HTMLDocument document = (HTMLDocument)myEditorPane.getDocument();
+    int linkCount = 0;
+    for (HTMLDocument.Iterator it = document.getIterator(HTML.Tag.A); it.isValid(); it.next()) {
+      if (it.getAttributes().isDefined(HTML.Attribute.HREF)) linkCount++;
+    }
+    return linkCount;
+  }
+
   @Nullable
   private HTMLDocument.Iterator getLink(int n) {
     if (n >= 0) {
@@ -978,6 +991,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
   }
 
   private void highlightLink(int n) {
+    myHighlightedLink = n;
     Highlighter highlighter = myEditorPane.getHighlighter();
     HTMLDocument.Iterator link = getLink(n);
     if (link != null) {
@@ -1006,6 +1020,14 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     }
   }
 
+  private void activateLink(int n) {
+    HTMLDocument.Iterator link = getLink(n);
+    if (link != null) {
+      String href = (String)link.getAttributes().getAttribute(HTML.Attribute.HREF);
+      myManager.navigateByLink(this, null, href);
+    }
+  }
+
   private class FontSizeSettingsAction extends AnAction implements HintManagerImpl.ActionToIgnore {
     private final boolean myOnToolbar;
 
@@ -1031,6 +1053,31 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
         // resize popup according to new font size, if user didn't set popup size manually
         if (!myManuallyResized && myHint != null && myHint.getDimensionServiceKey() == null) showHint();
       }, DocumentationComponent.this);
+    }
+  }
+
+  private class PreviousLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
+    @Override
+    public void actionPerformed(@NotNull AnActionEvent e) {
+      int linkCount = getLinkCount();
+      if (linkCount <= 0) return;
+      highlightLink(myHighlightedLink < 0 ? (linkCount - 1) : (myHighlightedLink + linkCount - 1) % linkCount);
+    }
+  }
+
+  private class NextLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
+    @Override
+    public void actionPerformed(@NotNull AnActionEvent e) {
+      int linkCount = getLinkCount();
+      if (linkCount <= 0) return;
+      highlightLink((myHighlightedLink + 1) % linkCount);
+    }
+  }
+
+  private class ActivateLinkAction extends AnAction implements HintManagerImpl.ActionToIgnore {
+    @Override
+    public void actionPerformed(@NotNull AnActionEvent e) {
+      activateLink(myHighlightedLink);
     }
   }
 

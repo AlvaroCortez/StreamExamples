@@ -908,7 +908,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       //todo delete when remove provider or not
       DocumentationProvider provider = getProviderFromElement(psiElement);
 
-      cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, url, null, provider) {
+      cancelAndFetchDocInfo(component, new DocumentationCollector(psiElement, null, provider) {
         @Override
         public String getDocumentation() {
           return "Couldn't resolve URL <i>" + url + "</i> <p>Configuring paths to API docs in <a href=\"open://Project Settings\">project settings</a> might help";
@@ -977,29 +977,22 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
   private abstract static class DocumentationCollector {
     private final CompletableFuture<PsiElement> myElementFuture;
-    //todo ref is used to scroll to ref, think do i need this?
     final String ref;
 
     //todo use in case when multiple method signature and try to delete in other places
-    //todo heck is used?
     volatile DocumentationProvider provider;
-    //todo check is used?
-    String effectiveUrl;
 
     DocumentationCollector(PsiElement element,
-                           String effectiveUrl,
                            String ref,
                            DocumentationProvider provider) {
-      this(CompletableFuture.completedFuture(element), effectiveUrl, ref, provider);
+      this(CompletableFuture.completedFuture(element), ref, provider);
     }
 
     DocumentationCollector(@NotNull CompletableFuture<PsiElement> elementFuture,
-                           String effectiveUrl,
                            String ref,
                            DocumentationProvider provider) {
       myElementFuture = elementFuture;
       this.ref = ref;
-      this.effectiveUrl = effectiveUrl;
       this.provider = provider;
     }
 
@@ -1036,7 +1029,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
                 PsiElement originalElement,
                 String ref,
                 boolean onHover) {
-      super(elementSupplier, null, ref, null);
+      super(elementSupplier, ref, null);
       this.project = project;
       this.originalElement = originalElement;
       this.onHover = onHover;
