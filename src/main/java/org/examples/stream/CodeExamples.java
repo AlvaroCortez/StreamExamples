@@ -10,6 +10,7 @@ public class CodeExamples {
             put("java.util.stream.Collectors.groupingBy2", "/examples/Collectors.groupingBy.html");
             put("java.util.stream.Collectors.groupingBy3", "/examples/Collectors.groupingBy.html");
             put("org.springframework.boot.SpringApplication.run2", "/examples/SpringApplication.run.html");
+            put("java.util.stream.Stream.flatMap1", "/examples/Stream.flatMap1.html");
         }
     };
 }

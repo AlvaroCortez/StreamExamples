@@ -7,7 +7,6 @@ import com.intellij.codeInsight.lookup.LookupEx;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.DataManager;
-import com.intellij.ide.actions.BaseNavigateToSourceAction;
 import com.intellij.ide.actions.WindowAction;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.lang.documentation.DocumentationMarkup;
@@ -43,7 +42,6 @@ import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.openapi.wm.ToolWindowId;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.openapi.wm.ex.WindowManagerEx;
-import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPointerManager;
@@ -262,10 +260,7 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     myScrollPane.setBorder(JBUI.Borders.empty());
 
     DefaultActionGroup actions = new DefaultActionGroup();
-    EditDocumentationSourceAction edit = new EditDocumentationSourceAction();
-    actions.add(edit);
 
-    edit.registerCustomShortcutSet(CommonShortcuts.getEditSource(), this);
     ActionPopupMenu contextMenu = ((ActionManagerImpl)ActionManager.getInstance()).createActionPopupMenu(
       ActionPlaces.JAVADOC_TOOLBAR, actions, new MenuItemPresentationFactory(true));
     PopupHandler popupHandler = new PopupHandler() {
@@ -856,35 +851,6 @@ public class DocumentationComponent extends JPanel implements Disposable, DataPr
     MyGearActionGroup(AnAction @NotNull ... actions) {
       super(actions);
       setPopup(true);
-    }
-  }
-
-  //todo remove or make edit the code example source
-  private final class EditDocumentationSourceAction extends BaseNavigateToSourceAction {
-
-    private EditDocumentationSourceAction() {
-      super(true);
-      getTemplatePresentation().setIcon(AllIcons.Actions.EditSource);
-      getTemplatePresentation().setText("Edit Source");
-    }
-
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-      super.actionPerformed(e);
-      JBPopup hint = myHint;
-      if (hint != null && hint.isVisible()) {
-        hint.cancel();
-      }
-    }
-
-    @Override
-    protected Navigatable @Nullable [] getNavigatables(DataContext dataContext) {
-      SmartPsiElementPointer<PsiElement> element = myElement;
-      if (element != null) {
-        PsiElement psiElement = element.getElement();
-        return psiElement instanceof Navigatable ? new Navigatable[]{(Navigatable)psiElement} : null;
-      }
-      return null;
     }
   }
 
