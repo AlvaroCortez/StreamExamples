@@ -74,8 +74,8 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
   private static final String NO_EXAMPLE_FOUND = "No example found.";
 
   private static final Logger LOG = Logger.getInstance(DocumentationManager.class);
-  private static final String SHOW_DOCUMENTATION_IN_TOOL_WINDOW = "ShowDocumentationInToolWindow";
-  private static final String DOCUMENTATION_AUTO_UPDATE_ENABLED = "DocumentationAutoUpdateEnabled";
+  private static final String SHOW_EXAMPLE_IN_TOOL_WINDOW = "ShowExampleInToolWindow";
+  private static final String EXAMPLE_AUTO_UPDATE_ENABLED = "ExampleAutoUpdateEnabled";
 
   private static final Class<?>[] ACTION_CLASSES_TO_IGNORE = {
     HintManagerImpl.ActionToIgnore.class,
@@ -373,7 +373,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     ToolWindow newToolWindow = myDefaultDocToolWindow;
 
     myPrecalculatedDocumentation = documentation;
-    if (newToolWindow == null && PropertiesComponent.getInstance().isTrueValue(SHOW_DOCUMENTATION_IN_TOOL_WINDOW)) {
+    if (newToolWindow == null && PropertiesComponent.getInstance().isTrueValue(SHOW_EXAMPLE_IN_TOOL_WINDOW)) {
       createToolWindow(element, originalElement);
     }
     else if (newToolWindow != null) {
@@ -914,12 +914,12 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
 
   @Override
   public String getShowInToolWindowProperty() {
-    return SHOW_DOCUMENTATION_IN_TOOL_WINDOW;
+    return SHOW_EXAMPLE_IN_TOOL_WINDOW;
   }
 
   @Override
   public String getAutoUpdateEnabledProperty() {
-    return DOCUMENTATION_AUTO_UPDATE_ENABLED;
+    return EXAMPLE_AUTO_UPDATE_ENABLED;
   }
 
   @Override

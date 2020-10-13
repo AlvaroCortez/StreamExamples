@@ -142,8 +142,7 @@ public abstract class DockablePopupManager<T extends JComponent & Disposable> {
                                            AllIcons.General.AutoscrollFromSource) {
       @Override
       public boolean isSelected(@NotNull AnActionEvent e) {
-        return PropertiesComponent.getInstance().getBoolean(getAutoUpdateEnabledProperty(),
-                                                            getAutoUpdateDefault());
+        return PropertiesComponent.getInstance().getBoolean(getAutoUpdateEnabledProperty(), getAutoUpdateDefault());
       }
 
       @Override
