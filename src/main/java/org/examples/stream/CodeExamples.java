@@ -15,6 +15,8 @@ public class CodeExamples {
             put("java.util.stream.Stream.allMatch1", "/examples/Stream/Stream.allMatch1.html");
             put("java.util.stream.Stream.anyMatch1", "/examples/Stream/Stream.anyMatch1.html");
             put("java.util.stream.Stream.noneMatch1", "/examples/Stream/Stream.noneMatch1.html");
+            put("java.util.stream.Stream.filter1", "/examples/Stream/Stream.filter1.html");
+            put("java.util.stream.Stream.mapToInt1", "/examples/Stream/Stream.mapToInt1.html");
         }
     };
 }
