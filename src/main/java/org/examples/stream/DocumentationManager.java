@@ -172,11 +172,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     }
   }
 
-  public void registerQuickDocShortcutSet(JComponent component, AnAction restorePopupAction) {
-    ShortcutSet quickDocShortcut = ActionManager.getInstance().getAction(IdeActions.ACTION_QUICK_JAVADOC).getShortcutSet();
-    restorePopupAction.registerCustomShortcutSet(quickDocShortcut, component);
-  }
-
   @Override
   public void createToolWindow(@NotNull PsiElement element, PsiElement originalElement) {
     doCreateToolWindow(element, originalElement);
@@ -190,7 +185,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     super.createToolWindow(element, originalElement);
     myDefaultDocToolWindow = myToolWindow;
     if (myRestorePopupAction != null) {
-      registerQuickDocShortcutSet(myToolWindow.getComponent(), myRestorePopupAction);
       myRestorePopupAction = null;
     }
   }
