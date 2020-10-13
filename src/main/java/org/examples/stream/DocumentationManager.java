@@ -58,21 +58,20 @@ import org.jetbrains.concurrency.CancellablePromise;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.lang.ref.WeakReference;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 public class DocumentationManager extends DockablePopupManager<DocumentationComponent> {
   public static final String NEW_JAVADOC_LOCATION_AND_SIZE = "javadoc.popup.new";
-  private static final String NO_DOCUMENTATION_FOUND = "No documentation found.";
+  private static final String NO_EXAMPLE_FOUND = "No example found.";
 
   private static final Logger LOG = Logger.getInstance(DocumentationManager.class);
   private static final String SHOW_DOCUMENTATION_IN_TOOL_WINDOW = "ShowDocumentationInToolWindow";
@@ -317,7 +316,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       @Override
       public void updatePopup(Object lookupIteObject) {
         if (lookupIteObject == null) {
-          doShowJavaDocInfo(elementFuture, false, this, originalElement, NO_DOCUMENTATION_FOUND);
+          doShowJavaDocInfo(elementFuture, false, this, originalElement, NO_EXAMPLE_FOUND);
           return;
         }
         if (lookupIteObject instanceof PsiElement) {
@@ -334,7 +333,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         );
 
         if (element == null) {
-          doShowJavaDocInfo(elementFuture, false, this, originalElement, NO_DOCUMENTATION_FOUND);
+          doShowJavaDocInfo(elementFuture, false, this, originalElement, NO_EXAMPLE_FOUND);
           return;
         }
 
@@ -452,17 +451,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
     myFocusedBeforePopup = new WeakReference<>(focusedComponent);
 
     DocumentationComponent component = new DocumentationComponent(this, true);
-    ActionListener actionListener = __ -> {
-      createToolWindow(element, originalElement);
-      JBPopup hint = getDocInfoHint();
-      if (hint != null && hint.isVisible()) hint.cancel();
-    };
-    List<Pair<ActionListener, KeyStroke>> actions = new SmartList<>();
-    AnAction quickDocAction = ActionManager.getInstance().getAction(IdeActions.ACTION_QUICK_JAVADOC);
-    for (Shortcut shortcut : quickDocAction.getShortcutSet().getShortcuts()) {
-      if (!(shortcut instanceof KeyboardShortcut)) continue;
-      actions.add(Pair.create(actionListener, ((KeyboardShortcut)shortcut).getFirstKeyStroke()));
-    }
 
     boolean hasLookup = LookupManager.getActiveLookup(myEditor) != null;
     AbstractPopup hint = (AbstractPopup)JBPopupFactory
@@ -470,7 +458,6 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       .setProject(myProject)
       .addListener(updateProcessor)
       .addUserData(updateProcessor)
-      .setKeyboardActions(actions)
       .setResizable(true)
       .setMovable(true)
       .setFocusable(true)
@@ -700,7 +687,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       PsiElement element = collector.getElement(false);
       if (element == null) {
         LOG.debug("Element for precalculated documentation is not available anymore");
-        component.setText(NO_DOCUMENTATION_FOUND, null);
+        component.setText(NO_EXAMPLE_FOUND, null);
         return;
       }
       component.setData(element, myPrecalculatedDocumentation, collector.ref);
@@ -722,7 +709,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
       PsiElement element = collector.getElement(true);
       if (element == null || !ReadAction.compute(element::isValid)) {
         LOG.debug("Element for which documentation was requested is not available anymore");
-        GuiUtils.invokeLaterIfNeeded(() -> component.setText(NO_DOCUMENTATION_FOUND, null), ModalityState.any());
+        GuiUtils.invokeLaterIfNeeded(() -> component.setText(NO_EXAMPLE_FOUND, null), ModalityState.any());
         return;
       }
 
@@ -759,7 +746,7 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
         }
         String currentText = component.getText();
         if (finalText == null) {
-          component.setText(NO_DOCUMENTATION_FOUND, element);
+          component.setText(NO_EXAMPLE_FOUND, element);
         }
         else if (finalText.isEmpty()) {
           component.setText(currentText, element);
@@ -1048,9 +1035,10 @@ public class DocumentationManager extends DockablePopupManager<DocumentationComp
           final int parametersCount = ((PsiMethod) element).getParameterList().getParametersCount();
           final String fullMethodName = getFullMethodName(psiClass, element, parametersCount);
           final String filePath = CodeExamples.classToFileMap.get(fullMethodName);
+          if (isNull(filePath)) return null;
           return FileUtil.loadTextAndClose(DocumentationManager.class.getResourceAsStream(filePath));
         }
-        return "";
+        return null;
       }).executeSynchronously();
     }
 

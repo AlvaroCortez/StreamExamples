@@ -1,11 +1,20 @@
 <html>
 <body>
-<div class='definition'><pre><code>java.util.stream.Stream&lt;T&gt;</code><br>public abstract&nbsp;&lt;R&gt;&nbsp;<code>Stream</code>&lt;R&gt;&nbsp;<b>flatMap</b>(<code>java.util.function.Function</code>&lt;? super T, ? extends <code>Stream</code>&lt;? extends R&gt;&gt;&nbsp;mapper)</pre></div>
-<div class="content">
+<div class='definition'>
+    <pre><code>java.util.stream.Stream&lt;T&gt;</code><br>public abstract&nbsp;&lt;R&gt;&nbsp;<code>Stream</code>&lt;R&gt;&nbsp;<b>flatMap</b>(<code>java.util.function.Function</code>&lt;? super T, ? extends <code>Stream</code>&lt;? extends R&gt;&gt;&nbsp;mapper)</pre>
+</div>
+<div class='content'>
     <p><b>Examples.</b>
     <pre><code>
-     Stream&lt;String&gt; lines = Files.lines(path, StandardCharsets.UTF_8);
-     Stream&lt;String&gt; words = lines.flatMap(line -&gt; Stream.of(line.split(&quot; +&quot;)));
+     List&lt;Order&gt; orders = asList(
+            new Order("food", asList("apple", "orange")),
+            new Order("clothes", asList("shirt", "dress")));
+
+     List&lt;String&gt; itemNames = orders.stream()
+            .flatMap(order -&gt; order.getItems().stream())
+            .collect(Collectors.toList());
+
+     System.out.println(itemNames);  //output ["apple", "orange", "shirt", "dress"]
     </code></pre>
 </div>
 </body>
