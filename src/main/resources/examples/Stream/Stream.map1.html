@@ -1,0 +1,20 @@
+<html>
+<body>
+<div class='definition'>
+    <pre>java.util.stream.Stream&lt;T&gt;<br>public abstract&nbsp;&lt;R&gt;&nbsp;Stream&lt;R&gt;&nbsp;<b>map</b>(java.util.function.Function&lt;? super T, ? extends R&gt;&nbsp;mapper)</pre>
+</div>
+<div class='content'>
+    <p><b>Examples.</b>
+    <pre><code>
+     List&lt;Order&gt; orders = asList(
+            new Order("food", asList("apple", "orange")),
+            new Order("clothes", asList("shirt", "dress")));
+
+     List&lt;String&gt; orderNames = orders.stream()
+            .flatMap(order -&gt; order.getName())
+            .collect(Collectors.toList());
+
+     System.out.println(orderNames);  // ["food", "clothes"]
+    </code></pre>
+</div>
+</body>
