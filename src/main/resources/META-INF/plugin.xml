@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>org.example.StreamExamples</id>
     <name>Stream Code Examples</name>
-    <vendor email="maslakov_denis@mail.ru" url="no">Maslakov</vendor>
+    <vendor email="maslakov_denis@mail.ru" url="https://github.com/AlvaroCortez">DenisMaslakov</vendor>
 
     <description><![CDATA[
     Stream code examples that shows when you click on stream method
