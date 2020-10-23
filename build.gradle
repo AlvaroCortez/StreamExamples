@@ -1,7 +1,10 @@
 plugins {
     id 'java'
     id 'org.jetbrains.intellij' version '0.4.22'
+    id 'org.jetbrains.changelog' version '0.6.2'
 }
+
+apply plugin: 'org.jetbrains.changelog'
 
 group 'org.example'
 version '0.5-SNAPSHOT'
@@ -19,8 +22,24 @@ intellij {
     version '2020.2.2'
     plugins = ['java']
 }
+
 patchPluginXml {
-    changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+    changeNotes({ changelog.getLatest().toHTML() })
+}
+
+changelog {
+    version = "${project.version}"
+    path = "${project.projectDir}/CHANGELOG.md"
+    header = { "[${project.version}]" }
+    headerParserRegex = ~/\d+\.\d+/
+    itemPrefix = "-"
+    keepUnreleasedSection = true
+    unreleasedTerm = "[Unreleased]"
+    groups = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"]
+}
+
+publishPlugin {
+    dependsOn("patchChangelog")
+    token(System.getenv("org.gradle.project.intellijPublishToken"))
+    channels("alpha")
 }
