@@ -1,0 +1,18 @@
+<html>
+<body>
+<div class='definition'>
+    <pre>java.util.stream.Stream&lt;T&gt;<br>public abstract java.util.stream.LongStream <b>mapToLong</b>(java.util.function.ToLongFunction&lt;? super T&gt;&nbsp;mapper)</pre>
+</div>
+<div class='content'>
+    <p><b>Examples.</b>
+    <pre><code>
+     List&lt;String&gt; stringNumbers = asList("999999", "123", "1");
+
+     long[] longNumbers = stringNumbers.stream()
+            .mapToLong(Long::parseLong)
+            .toArray();
+
+     System.out.println(longNumbers);  // [999999, 123, 1]
+    </code></pre>
+</div>
+</body>

@@ -1,0 +1,23 @@
+<html>
+<body>
+<div class='definition'>
+    <pre>java.util.stream.Stream&lt;T&gt;<br>public abstract java.util.stream.IntStream <b>flatMapToInt</b>(java.util.function.Function&lt;? super T, ? extends IntStream&gt;&nbsp;mapper)</pre>
+</div>
+<div class='content'>
+    <p><b>Examples.</b>
+    <pre><code>
+     List&lt;Country&gt; countries = asList(
+                new Country("Russia", asList("Moscow", "Saint-Petersburg")),
+                new Country("Great Britain", asList("London")));
+
+     int[] citiesLength = cities.stream()
+            .mapToInt(city -&gt; city.length())
+            .toArray();
+     int[] allCitiesLength = countries.stream()
+            .flatMapToInt(country -&gt; country.cities.stream().mapToInt(String::length))
+            .toArray();
+
+     System.out.println(allCitiesLength);  // [6, 16, 6]
+    </code></pre>
+</div>
+</body>

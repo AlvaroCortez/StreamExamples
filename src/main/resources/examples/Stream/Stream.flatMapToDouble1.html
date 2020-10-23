@@ -1,0 +1,18 @@
+<html>
+<body>
+<div class='definition'>
+    <pre>java.util.stream.Stream&lt;T&gt;<br>public abstract java.util.stream.DoubleStream <b>flatMapToDouble</b>(java.util.function.Function&lt;? super T, ? extends DoubleStream&gt;&nbsp;mapper)</pre>
+</div>
+<div class='content'>
+    <p><b>Examples.</b>
+    <pre><code>
+     List&lt;List&lt;Double&gt;&gt; listOfDoubleLists = asList(asList(123.4, 56.78), asList(9.0, 12.34));
+
+     double[] allDoubles = listOfDoubleLists.stream()
+            .flatMapToDouble(doubleList -&gt; doubleList.stream().mapToDouble(Double::doubleValue))
+            .toArray();
+
+     System.out.println(allDoubles);  // [123.4, 56.78, 9.0, 12.34]
+    </code></pre>
+</div>
+</body>
